@@ -8,7 +8,8 @@ Demo Pages: [Results of pure speech separation model](https://www.likai.show/Pur
 
 ## Code writing log
 
-- August 26, 2023 version - attempt at GPU-able repository. Confirmed to be working with CPU.
+- August 26, 2023 version - attempt at GPU-able repository. Confirmed to be working with CPU. Juan's local machine does not have a GPU, code not yet confirmed to be working with GPU.
+  > If running training with GPU (CUDA) go to config/train.yml and change is_gpu to `true`
 
 ## Requirement
 

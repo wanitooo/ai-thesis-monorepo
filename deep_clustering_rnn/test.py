@@ -29,7 +29,8 @@ class Separation(object):
         super(Separation).__init__()
         if opt['train']['is_gpu']:
             self.dpcl = dpcl.cuda()
-            self.device = torch.device('cpu')
+            self.device = torch.device(
+                'cuda' if torch.cuda.is_available() else 'cpu')
         else:
             self.dpcl = dpcl
         self.dpcl = dpcl
