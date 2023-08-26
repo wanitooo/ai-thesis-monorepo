@@ -1,10 +1,8 @@
+import torch
+from utils.stft_istft import STFT
+import utils.util as ut
 import sys
 sys.path.append('../')
-
-import utils.util as ut
-from utils.stft_istft import STFT
-import torch
-
 
 
 class AudioData(object):
@@ -41,7 +39,8 @@ class AudioData(object):
 
 
 if __name__ == "__main__":
-    ad = AudioData("/home/likai/data1/create_scp/cv_mix.scp", is_mag=True,is_log=True)
+    ad = AudioData("/home/likai/data1/create_scp/cv_mix.scp",
+                   is_mag=True, is_log=True)
     audio = ad['011a010d_0.54422_20do010c_-0.54422.wav']
     print(audio.shape)
     print(ut.compute_non_silent(audio))

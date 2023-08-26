@@ -1,15 +1,18 @@
+import pickle
+from tqdm import tqdm
+import numpy as np
+import torch
 import json
 from pathlib import Path
 from collections import OrderedDict
 import librosa
 import os
 import sys
-sys.path.append('../')
-import torch
-import numpy as np
+sys.path.append('../deep_clustering_rnn/')
+print("sys.path ", sys.path)
 from data_loader import AudioData
-from tqdm import tqdm
-import pickle
+
+
 def ensure_dir(dirname):
     dirname = Path(dirname)
     if not dirname.is_dir():
@@ -81,7 +84,8 @@ def compute_non_silent(samp, threshold=40, is_linear=True):
     non_silent = np.array(samp > threshold, dtype=np.float32)
     return non_silent
 
-def compute_cmvn(scp_file,save_file,**kwargs):
+
+def compute_cmvn(scp_file, save_file, **kwargs):
     '''
        Feature normalization
        scp_file: the file path of scp
@@ -92,7 +96,7 @@ def compute_cmvn(scp_file,save_file,**kwargs):
             mean: [frequency-bins]
             var:  [frequency-bins]
     '''
-    wave_reader = AudioData(scp_file,**kwargs)
+    wave_reader = AudioData(scp_file, **kwargs)
     tf_bin = int(kwargs['nfft']/2+1)
     mean = np.zeros(tf_bin)
     std = np.zeros(tf_bin)
@@ -109,8 +113,9 @@ def compute_cmvn(scp_file,save_file,**kwargs):
     print("Totally processed {} frames".format(num_frames))
     print("Global mean: {}".format(mean))
     print("Global std: {}".format(std))
-    
-def apply_cmvn(samp,cmvn_dict):
+
+
+def apply_cmvn(samp, cmvn_dict):
     '''
       apply cmvn for Spectrogram
       samp: stft Spectrogram
@@ -120,11 +125,13 @@ def apply_cmvn(samp,cmvn_dict):
     '''
     return (samp-cmvn_dict['mean'])/cmvn_dict['std']
 
+
 if __name__ == "__main__":
-    kwargs = {'window':'hann', 'nfft':256, 'window_length':256, 'hop_length':64, 'center':False, 'is_mag':True, 'is_log':True}
-    compute_cmvn("/home/likai/data1/create_scp/tr_mix.scp",'../cmvn.ark',**kwargs)
-    #file = pickle.load(open('cmvn.ark','rb'))
-    #print(file)
-    #samp = read_wav('../1.wav')
-    #print(compute_non_silent(samp))
-    
+    kwargs = {'window': 'hann', 'nfft': 256, 'window_length': 256,
+              'hop_length': 64, 'center': False, 'is_mag': True, 'is_log': True}
+    compute_cmvn("./tr_mix.scp",
+                 '../cmvn.ark', **kwargs)
+    # file = pickle.load(open('cmvn.ark','rb'))
+    # print(file)
+    # samp = read_wav('../1.wav')
+    # print(compute_non_silent(samp))

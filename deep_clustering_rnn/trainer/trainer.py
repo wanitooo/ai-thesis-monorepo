@@ -27,14 +27,14 @@ class Trainer(object):
         self.checkpoint = opt['train']['path']
         self.name = opt['name']
 
-        if opt['train']['is_gpu']:
-            self.logger.info('Load Nvida GPU .....')
-            self.device = torch.device('cuda:0')
-            self.dpcl = DPCL.to(self.device)
-        else:
-            self.logger.info('Load CPU ...........')
-            self.device = torch.device('cpu')
-            self.dpcl = DPCL.to(self.device)
+        # if opt['train']['is_gpu']:
+        #     self.logger.info('Load Nvida GPU .....')
+        #     self.device = torch.device('cuda:0')
+        #     self.dpcl = DPCL.to(self.device)
+        # else:
+        self.logger.info('Load CPU ...........')
+        self.device = torch.device('cpu')
+        self.dpcl = DPCL.to(self.device)
             
         if opt['resume']['state']:    
             ckp = torch.load(opt['resume']['path'],map_location='cpu')
@@ -117,41 +117,42 @@ class Trainer(object):
         return total_loss
     
     def run(self):
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         train_loss = []
         val_loss = []
-        with torch.cuda.device(0):
-            self.save_checkpoint(self.cur_epoch,best=False)
+        # with torch.device("cpu"):
+        self.save_checkpoint(self.cur_epoch,best=False)
+        v_loss = self.validation(self.cur_epoch)
+        best_loss = v_loss
+        self.logger.info("Starting epoch from {:d}, loss = {:.4f}".format(
+            self.cur_epoch, best_loss))
+        no_improve = 0
+        # starting training part
+        while self.cur_epoch < self.total_epoch:
+            self.cur_epoch += 1
+            t_loss = self.train(self.cur_epoch)
             v_loss = self.validation(self.cur_epoch)
-            best_loss = v_loss
-            self.logger.info("Starting epoch from {:d}, loss = {:.4f}".format(
-                self.cur_epoch, best_loss))
-            no_improve = 0
-            # starting training part
-            while self.cur_epoch < self.total_epoch:
-                self.cur_epoch += 1
-                t_loss = self.train(self.cur_epoch)
-                v_loss = self.validation(self.cur_epoch)
 
-                train_loss.append(t_loss)
-                val_loss.append(v_loss)
+            train_loss.append(t_loss)
+            val_loss.append(v_loss)
 
-                if v_loss >= best_loss:
-                    no_improve += 1
-                    self.logger.info('No improvement, Best Loss: {:.4f}'.format(best_loss))
-                else:
-                    best_loss = v_loss
-                    no_improve = 0
-                    self.save_checkpoint(self.cur_epoch,best=True)
-                    self.logger.info('Epoch: {:d}, Now Best Loss Change: {:.4f}'.format(self.cur_epoch,best_loss))
-                
-                if no_improve == self.early_stop:
-                    self.logger.info(
-                        "Stop training cause no impr for {:d} epochs".format(
-                            no_improve))
-                    break
-            self.save_checkpoint(self.cur_epoch,best=False)
-            self.logger.info("Training for {:d}/{:d} epoches done!".format(
-                self.cur_epoch, self.total_epoch))
+            if v_loss >= best_loss:
+                no_improve += 1
+                self.logger.info('No improvement, Best Loss: {:.4f}'.format(best_loss))
+            else:
+                best_loss = v_loss
+                no_improve = 0
+                self.save_checkpoint(self.cur_epoch,best=True)
+                self.logger.info('Epoch: {:d}, Now Best Loss Change: {:.4f}'.format(self.cur_epoch,best_loss))
+            
+            if no_improve == self.early_stop:
+                self.logger.info(
+                    "Stop training cause no impr for {:d} epochs".format(
+                        no_improve))
+                break
+        self.save_checkpoint(self.cur_epoch,best=False)
+        self.logger.info("Training for {:d}/{:d} epoches done!".format(
+            self.cur_epoch, self.total_epoch))
         
 
         # draw loss image

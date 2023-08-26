@@ -1,5 +1,5 @@
 import sys
-sys.path.append('../')
+sys.path.append('../deep_clustering_rnn/')
 
 from torch.nn.utils.rnn import pack_sequence, pad_sequence
 from data_loader import AudioData
@@ -34,7 +34,7 @@ class dataloader(object):
         self.dataload = DataLoader(
             dataset, batch_size=batch_size, num_workers=num_workers, shuffle=shuffle, collate_fn=self.collate)
         self.cmvn = pickle.load(open(cmvn_file, 'rb'))
-    
+
     def __len__(self):
         return len(self.dataload)
 
@@ -49,7 +49,7 @@ class dataloader(object):
             "mix_wave": torch.tensor(mix_wave, dtype=torch.float32),
             "target_waves": torch.tensor(target_waves, dtype=torch.int64)
         }
-    
+
     def collate(self, batchs):
         trans = sorted([self.transform(mix_wave, target_waves)
                         for mix_wave, target_waves in batchs], key=lambda x: x["frames"], reverse=True)
@@ -67,9 +67,10 @@ class dataloader(object):
 
 if __name__ == "__main__":
     mix_reader = AudioData(
-        "/home/likai/Desktop/create_scp/tr_mix.scp", is_mag=True, is_log=True)
-    target_readers = [AudioData("/home/likai/Desktop/create_scp/tr_s1.scp", is_mag=True, is_log=True),
-                      AudioData("/home/likai/Desktop/create_scp/tr_s2.scp", is_mag=True, is_log=True)]
+        "../tr_mix.scp", is_mag=True, is_log=True)
+    target_readers = [AudioData("../tr_s1.scp", is_mag=True, is_log=True),
+                      AudioData("../tr_s2.scp", is_mag=True, is_log=True)]
     dataset = dataset(mix_reader, target_readers)
     dataloader = dataloader(dataset)
     print(len(dataloader))
+    print("DATASET",  dataloader.dataset())

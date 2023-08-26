@@ -12,7 +12,7 @@ class Loss(object):
         self.target_waves = target_waves
         self.non_slient = non_slient
         self.num_spks = num_spks
-        self.device = torch.device('cuda:0')
+        self.device = torch.device('cpu')
 
     def loss(self):
         '''

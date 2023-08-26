@@ -12,6 +12,8 @@ import os
 import librosa
 import pickle
 from tqdm import tqdm
+
+
 class Separation(object):
     '''
         test deep clutsering model
@@ -22,15 +24,16 @@ class Separation(object):
         kmeans: KMeans
         num_spks: speaker number
     '''
+
     def __init__(self, dpcl, scp_file, opt, save_file):
         super(Separation).__init__()
         if opt['train']['is_gpu']:
             self.dpcl = dpcl.cuda()
-            self.device = torch.device('cuda')
+            self.device = torch.device('cpu')
         else:
             self.dpcl = dpcl
         self.dpcl = dpcl
-        ckp = torch.load('./checkpoint/DPCL/best.pt',map_location=self.device)
+        ckp = torch.load('./checkpoint/DPCL/best.pt', map_location=self.device)
         self.dpcl.load_state_dict(ckp['model_state_dict'])
         self.dpcl.eval()
         self.waves = AudioData(scp_file, **opt['audio_setting'])
@@ -39,6 +42,7 @@ class Separation(object):
         self.num_spks = opt['num_spks']
         self.save_file = save_file
         self.opt = opt
+
     def _cluster(self, wave, non_silent):
         '''
             input: T x F
@@ -73,13 +77,13 @@ class Separation(object):
             EPSILON = np.finfo(np.float32).eps
             log_wave = np.log(np.maximum(np.abs(wave), EPSILON))
 
-            # apply cmvn 
-            cmvn = pickle.load(open(self.opt['cmvn_file'],'rb'))
-            cmvn_wave = util.apply_cmvn(log_wave,cmvn)
+            # apply cmvn
+            cmvn = pickle.load(open(self.opt['cmvn_file'], 'rb'))
+            cmvn_wave = util.apply_cmvn(log_wave, cmvn)
 
             # calculate non silent
             non_silent = util.compute_non_silent(log_wave).astype(np.bool)
-            
+
             target_mask = self._cluster(cmvn_wave, non_silent)
             for i in range(len(target_mask)):
                 name = self.keys[index]
@@ -88,11 +92,10 @@ class Separation(object):
                 output_file = os.path.join(
                     self.save_file, self.opt['name'], 'spk'+str(i+1))
                 os.makedirs(output_file, exist_ok=True)
-                
+
                 librosa.output.write_wav(output_file+'/'+name, i_stft, 8000)
-            index+=1
+            index += 1
         print('Processing {} utterances'.format(index))
-            
 
 
 if __name__ == "__main__":
@@ -106,6 +109,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     opt = option.parse(args.opt)
     dpcl = model.DPCL(**opt['DPCL'])
-    
+
     separation = Separation(dpcl, args.scp, opt, args.save_file)
     separation.run()
