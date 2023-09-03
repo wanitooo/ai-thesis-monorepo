@@ -12,6 +12,8 @@ pip install -r requirements.txt
 
 # Training
 
+Skip mo muna yung Conv-TasNet instructions drin, and go straight to Dual Path RNN instructions. I think the Conv-Tasnet model part is integrated in the Dual Path model na based sa code but it's not explicitly stated (could be wrong). Also in both train.py and train_rnn.py, nauuna yung validation sa logs, even though una yung training dapat sa code. Though after some iterations lalabas narin yung train (dapat). See log/conv_Tasnet/conv-tasnet.log
+
 ## Training for Conv-TasNet model
 
 1. First, you need to generate the scp file using the following command. The content of the scp file is "filename && path".
@@ -39,14 +41,14 @@ python3 train_Tasnet.py --opt config/Conv_Tasnet/train.yml
 1. First, you need to generate the scp file using the following command. The content of the scp file is "filename && path".
 
 ```shell
-python create_scp.py
+python3 create_scp.py
 ```
 
 2. Then you can modify the training and model parameters through "[config/Dual_RNN/train.yml](https://github.com/JusperLee/Dual-Path-RNN-Pytorch/tree/master/config/Dual_RNN "config / Dual_RNN / train.yml")".
 
 ```shell
 cd config/Dual_RNN
-vim train.yml
+vim train_rnn.yml
 ```
 
 3. Then use the following command in the root directory to train the model.

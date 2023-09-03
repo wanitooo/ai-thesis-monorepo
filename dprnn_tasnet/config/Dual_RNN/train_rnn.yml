@@ -41,7 +41,9 @@ train:
   epoch: 100
   early_stop: 10
   path: ./checkpoint
-  gpuid: [7]
+  # gpuid: [7] # Original # Jusper trained with 8 GPUs, guessing this is the last GPU's ID
+  gpuid: [0] # For one GPU? or gpuid: 0
+  # gpuid: false # For CPU
 
 #### Optimizer settings
 optim:
