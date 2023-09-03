@@ -59,8 +59,6 @@ python3 train_rnn.py --opt config/Dual_RNN/train_rnn.yml
 
 # Inference
 
-- Have not attempted to run this code at all (Sept 3, 2023)
-
 ## Conv-TasNet
 
 You need to modify the default parameters in the test_tasnet.py file, including test files, test models, etc.
@@ -69,9 +67,13 @@ You need to modify the default parameters in the test_tasnet.py file, including 
 
 ```shell
 python3 test_tasnet.py
+or
+python3 test_tasnet.py -nogpu true
 ```
 
 ### For single-audio
+
+- Not tried
 
 ```shell
 python3 test_tasnet_wav.py
@@ -84,13 +86,17 @@ You need to modify the default parameters in the test_dualrnn.py file, including
 ### For multi-audio
 
 ```shell
-python test_dualrnn.py
+python3 dualrnn_test.py
+or
+python3 dualrnn_test.py -nogpu true
 ```
 
 ### For single-audio
 
+- Not tried
+
 ```shell
-python test_dualrnn_wav.py
+python3 dualrnn_test_wav.py
 ```
 
 # Pretrain Model

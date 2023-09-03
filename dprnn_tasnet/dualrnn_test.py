@@ -11,7 +11,7 @@ import tqdm
 
 
 class Separation():
-    def __init__(self, mix_path, yaml_path, model, gpuid):
+    def __init__(self, mix_path, yaml_path, model, gpuid, nogpu):
         super(Separation, self).__init__()
         self.mix = AudioReader(mix_path, sample_rate=8000)
         opt = parse(yaml_path)
@@ -21,12 +21,19 @@ class Separation():
         setup_logger(opt['logger']['name'], opt['logger']['path'],
                      screen=opt['logger']['screen'], tofile=opt['logger']['tofile'])
         self.logger = logging.getLogger(opt['logger']['name'])
+        self.logger.info(self.mix)
         self.logger.info(
             'Load checkpoint from {}, epoch {: d}'.format(model, dicts["epoch"]))
-        self.net = net.cuda()
-        self.device = torch.device('cuda:{}'.format(
-            gpuid[0]) if len(gpuid) > 0 else 'cpu')
-        self.gpuid = tuple(gpuid)
+
+        if nogpu:
+            self.net = net.cpu()
+            self.device = torch.device('cpu')
+            self.gpuid = []
+        else:
+            self.net = net.cuda()
+            self.device = torch.device('cuda:{}'.format(
+                gpuid[0]) if len(gpuid) > 0 else 'cpu')
+            self.gpuid = tuple(gpuid)
 
     def inference(self, file_path):
         with torch.no_grad():
@@ -56,7 +63,7 @@ class Separation():
                     os.makedirs(file_path+'/spk'+str(index), exist_ok=True)
                     filename = file_path+'/spk'+str(index)+'/'+key
                     write_wav(filename, s, 8000)
-                break
+                # break
             self.logger.info(
                 "Compute over {:d} utterances".format(len(self.mix)))
 
@@ -72,10 +79,13 @@ def main():
     parser.add_argument(
         '-gpuid', type=str, default='0', help='Enter GPU id number')
     parser.add_argument(
+        '-nogpu', type=bool, default=False, help='Use without gpu')
+    parser.add_argument(
         '-save_path', type=str, default='./result/dual-rnn/', help='save result path')
     args = parser.parse_args()
     gpuid = [int(i) for i in args.gpuid.split(',')]
-    separation = Separation(args.mix_scp, args.yaml, args.model, gpuid)
+    separation = Separation(args.mix_scp, args.yaml,
+                            args.model, gpuid, args.nogpu)
     separation.inference(args.save_path)
 
 

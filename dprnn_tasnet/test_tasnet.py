@@ -11,7 +11,7 @@ import tqdm
 
 
 class Separation():
-    def __init__(self, mix_path, yaml_path, model, gpuid):
+    def __init__(self, mix_path, yaml_path, model, gpuid, nogpu):
         super(Separation, self).__init__()
         self.mix = AudioReader(mix_path, sample_rate=8000)
         opt = parse(yaml_path)
@@ -23,10 +23,15 @@ class Separation():
         self.logger = logging.getLogger(opt['logger']['name'])
         self.logger.info(
             'Load checkpoint from {}, epoch {: d}'.format(model, dicts["epoch"]))
-        self.net = net.cuda()
-        self.device = torch.device('cuda:{}'.format(
-            gpuid[0]) if len(gpuid) > 0 else 'cpu')
-        self.gpuid = tuple(gpuid)
+        if nogpu:
+            self.net = net.cpu()
+            self.device = torch.device('cpu')
+            self.gpuid = []
+        else:
+            self.net = net.cuda()
+            self.device = torch.device('cuda:{}'.format(
+                gpuid[0]) if len(gpuid) > 0 else 'cpu')
+            self.gpuid = tuple(gpuid)
 
     def inference(self, file_path):
         with torch.no_grad():
@@ -68,14 +73,17 @@ def main():
     parser.add_argument(
         '-yaml', type=str, default='./config/Conv_Tasnet/train.yml', help='Path to yaml file.')
     parser.add_argument(
-        '-model', type=str, default='./checkpoint/Conv_Tasnet/best.pt', help="Path to model file.")
+        '-model', type=str, default='./checkpoint/Conv_Tasnet/last.pt', help="Path to model file.")
     parser.add_argument(
         '-gpuid', type=str, default='0', help='Enter GPU id number')
+    parser.add_argument(
+        '-nogpu', type=bool, default=False, help='Defaults to false')
     parser.add_argument(
         '-save_path', type=str, default='./result/conv_tasnet/', help='save result path')
     args = parser.parse_args()
     gpuid = [int(i) for i in args.gpuid.split(',')]
-    separation = Separation(args.mix_scp, args.yaml, args.model, gpuid)
+    separation = Separation(args.mix_scp, args.yaml,
+                            args.model, gpuid, args.nogpu)
     separation.inference(args.save_path)
 
 

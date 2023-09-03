@@ -11,7 +11,7 @@ import tqdm
 
 
 class Separation():
-    def __init__(self, mix_path, yaml_path, model, gpuid):
+    def __init__(self, mix_path, yaml_path, model, gpuid, nogpu):
         super(Separation, self).__init__()
         self.mix = read_wav(mix_path)
         opt = parse(yaml_path)
@@ -23,8 +23,15 @@ class Separation():
         self.logger = logging.getLogger(opt['logger']['name'])
         self.logger.info(
             'Load checkpoint from {}, epoch {: d}'.format(model, dicts["epoch"]))
-        self.net = net
-        self.gpuid = gpuid
+        if nogpu:
+            self.net = net.cpu()
+            self.device = torch.device('cpu')
+            self.gpuid = []
+        else:
+            self.net = net.cuda()
+            self.device = torch.device('cuda:{}'.format(
+                gpuid[0]) if len(gpuid) > 0 else 'cpu')
+            self.gpuid = tuple(gpuid)
 
     def inference(self, file_path):
         self.net.eval()
@@ -65,10 +72,13 @@ def main():
     parser.add_argument(
         '-gpuid', type=str, default='0', help='Enter GPU id number')
     parser.add_argument(
+        '-nogpu', type=bool, default=False, help='Use without gpu')
+    parser.add_argument(
         '-save_path', type=str, default='./test', help='save result path')
     args = parser.parse_args()
     gpuid = [int(i) for i in args.gpuid.split(',')]
-    separation = Separation(args.mix_scp, args.yaml, args.model, [])
+    separation = Separation(args.mix_scp, args.yaml,
+                            args.model, [], args.nogpu)
     separation.inference(args.save_path)
 
 
