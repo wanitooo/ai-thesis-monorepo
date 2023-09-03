@@ -59,6 +59,8 @@ python3 train_rnn.py --opt config/Dual_RNN/train_rnn.yml
 
 # Inference
 
+- Have not attempted to run this code at all (Sept 3, 2023)
+
 ## Conv-TasNet
 
 You need to modify the default parameters in the test_tasnet.py file, including test files, test models, etc.
@@ -66,13 +68,13 @@ You need to modify the default parameters in the test_tasnet.py file, including 
 ### For multi-audio
 
 ```shell
-python test_tasnet.py
+python3 test_tasnet.py
 ```
 
 ### For single-audio
 
 ```shell
-python test_tasnet_wav.py
+python3 test_tasnet_wav.py
 ```
 
 ## Dual-Path-RNN
@@ -93,13 +95,9 @@ python test_dualrnn_wav.py
 
 # Pretrain Model
 
-## Conv-TasNet
+- [Conv-TasNet model](https://drive.google.com/open?id=1MRe4jiwgtAFZErjz-LWuuyEG8VGSU0YS "Google Driver")
 
-[Conv-TasNet model](https://drive.google.com/open?id=1MRe4jiwgtAFZErjz-LWuuyEG8VGSU0YS "Google Driver")
-
-## Dual-Path-RNN
-
-[Dual-Path-RNN model](https://drive.google.com/open?id=1TInJB-idggkKJ5YkNvnrTopum_HgX3_o "Google Driver")
+- [Dual-Path-RNN model](https://drive.google.com/open?id=1TInJB-idggkKJ5YkNvnrTopum_HgX3_o "Google Driver")
 
 # Result
 
