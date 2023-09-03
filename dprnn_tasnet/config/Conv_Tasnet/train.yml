@@ -5,23 +5,22 @@ num_spks: 2
 #### datasets
 datasets:
   train:
-    dataroot_mix: /home/likai/data1/create_scp/tr_mix.scp
-    dataroot_targets: [/home/likai/data1/create_scp/tr_s1.scp,/home/likai/data1/create_scp/tr_s2.scp]
+    dataroot_mix: ./tr_mix.scp
+    dataroot_targets: [./tr_s1.scp, ./tr_s2.scp]
 
   val:
-    dataroot_mix: /home/likai/data1/create_scp/cv_mix.scp
-    dataroot_targets: [/home/likai/data1/create_scp/cv_s1.scp,/home/likai/data1/create_scp/cv_s2.scp]
-  
+    dataroot_mix: ./cv_mix.scp
+    dataroot_targets: [./cv_s1.scp, ./cv_s2.scp]
+
   dataloader_setting:
     shuffle: true
-    num_workers: 10  # per GPU
+    num_workers: 10 # per GPU
     batch_size: 20
-  
+
   audio_setting:
     sample_rate: 8000
     chunk_size: 32000
     least_size: 16000
-    
 
 #### network structures
 Conv_Tasnet:
@@ -41,12 +40,12 @@ Conv_Tasnet:
 train:
   epoch: 100
   early_stop: 10
-  path: /home/likai/data1/Dual-Path-RNN/checkpoint
-  gpuid: [0,1,2,3,4,5,6,7]
+  path: ./checkpoint
+  gpuid: [0, 1, 2, 3, 4, 5, 6, 7]
 
 #### Optimizer settings
 optim:
-  name: Adam   ### Adam, RMSprop, SGD
+  name: Adam ### Adam, RMSprop, SGD
   lr: !!float 1e-3
   momentum: 0.9
   weight_decay: !!float 1e-5
@@ -61,13 +60,12 @@ scheduler:
 #### Resume training settings
 resume:
   state: false
-  path: /home/likai/data1/Dual-Path-RNN/checkpoint
-
+  path: ./checkpoint
 
 #### logger
 logger:
   name: DPCL
-  path: /home/likai/data1/Dual-Path-RNN/checkpoint
+  path: ./checkpoint
   screen: true
   tofile: false
   print_freq: 100
