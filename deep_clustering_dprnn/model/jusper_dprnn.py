@@ -9,7 +9,7 @@ sys.path.append('../')
 
 warnings.filterwarnings('ignore')
 
-# These are covn tasnet components
+# These are covn tasnet components ?
 # :
 #
 
@@ -157,7 +157,7 @@ def select_norm(norm, dim, shape):
         return nn.BatchNorm1d(dim)
 
 
-class Dual_RNN_Block(nn.Module):
+class Dual_RNN_Block(nn.Module):  # Corresponds to only B)
     '''
        Implementation of the intra-RNN and the inter-RNN
        input:
@@ -176,6 +176,7 @@ class Dual_RNN_Block(nn.Module):
                  dropout=0, bidirectional=False, num_spks=2):
         super(Dual_RNN_Block, self).__init__()
         # RNN model
+        # getattr() gets nn.<RNN_TYPE> and then intializes it with the args, so its like nn.BLSTM(*args, **kwargs)
         self.intra_rnn = getattr(nn, rnn_type)(
             out_channels, hidden_channels, 1, batch_first=True, dropout=dropout, bidirectional=bidirectional)
         self.inter_rnn = getattr(nn, rnn_type)(
@@ -191,14 +192,17 @@ class Dual_RNN_Block(nn.Module):
 
     def forward(self, x):
         '''
+            B == BATCH, N==?, K==Length of the chunks, S==SPEAKERS?
            x: [B, N, K, S]
            out: [Spks, B, N, K, S]
         '''
         B, N, K, S = x.shape
+        # Based on my reading permute() rearanges the order of the dims, view() reshapes
         # intra RNN
-        # [BS, K, N]
+        # [BS, K, N] # Preparing the shape to feed into the intra chunk(?)
         intra_rnn = x.permute(0, 3, 2, 1).contiguous().view(B*S, K, N)
         # [BS, K, H]
+        # Gets the type of rnn then feeds the data
         intra_rnn, _ = self.intra_rnn(intra_rnn)
         # [BS, K, N]
         intra_rnn = self.intra_linear(
@@ -210,12 +214,13 @@ class Dual_RNN_Block(nn.Module):
         intra_rnn = self.intra_norm(intra_rnn)
 
         # [B, N, K, S]
-        intra_rnn = intra_rnn + x
+        intra_rnn = intra_rnn + x  # adds the processed input back to the original input
 
         # inter RNN
-        # [BK, S, N]
+        # [BK, S, N] # Prepares shape, note 2 and 3 are exchanged this time?
         inter_rnn = intra_rnn.permute(0, 2, 3, 1).contiguous().view(B*K, S, N)
         # [BK, S, H]
+        # Gets the type of rnn then feeds the data
         inter_rnn, _ = self.inter_rnn(inter_rnn)
         # [BK, S, N]
         inter_rnn = self.inter_linear(
@@ -226,14 +231,15 @@ class Dual_RNN_Block(nn.Module):
         inter_rnn = inter_rnn.permute(0, 3, 1, 2).contiguous()
         inter_rnn = self.inter_norm(inter_rnn)
         # [B, N, K, S]
+        # intra_rnn (tensor) is the "original" input that was fed to the inter rnn (layers)
         out = inter_rnn + intra_rnn
 
         return out
 
 
-class Dual_Path_RNN(nn.Module):
+class Dual_Path_RNN(nn.Module):  # All together
     '''
-       Implementation of the Dual-Path-RNN model
+       Implementation of the Dual-Path-RNN model # with tasnet?
        input:
             in_channels: The number of expected features in the input x
             out_channels: The number of features in the hidden state h
@@ -329,7 +335,7 @@ class Dual_Path_RNN(nn.Module):
 
         return input, gap
 
-    def _Segmentation(self, input, K):
+    def _Segmentation(self, input, K):  # Corresponds to A)
         '''
            the segmentation stage splits
            K: chunks of length
@@ -348,7 +354,7 @@ class Dual_Path_RNN(nn.Module):
 
         return input.contiguous(), gap
 
-    def _over_add(self, input, gap):
+    def _over_add(self, input, gap):  # Corresponds to C)
         '''
            Merge sequence
            input: [B, N, K, S]
@@ -370,9 +376,10 @@ class Dual_Path_RNN(nn.Module):
         return input
 
 
-class Dual_RNN_model(nn.Module):
+class Dual_RNN_model(nn.Module):  # With conv tasnet
     '''
-       model of Dual Path RNN
+       model of Dual Path RNN # with conv-tasnet?, the encoder / decoder model was a tasnet specific thing iirc
+
        input:
             in_channels: The number of expected features in the input x
             out_channels: The number of features in the hidden state h

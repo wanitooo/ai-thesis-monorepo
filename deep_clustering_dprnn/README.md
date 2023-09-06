@@ -1,6 +1,6 @@
 # Combining both Dual Path RNN and Deep Clustering
 
-Scaffold for architecting / building the model. The code is not runnable. The added code are for reference/editing later.
+Scaffold for architecting / building the model. The code is not runnable. The added code are for reference/editing later. Attempts at making the DPCL-DPRNN model are at model/initial_dpcl_dprnn.
 
 ## Notes
 
@@ -21,6 +21,14 @@ Scaffold for architecting / building the model. The code is not runnable. The ad
 
 ### In /dprnn_tasnet
 
+- Terrible naming in the model_rnn.py file
+- the Dual_RNN_Block class corresponds to `B)` in the original paper.
+- Dual_Path_RNN class corresponds to `A)`, `B)`, `C)` altogether combined, the segmentation and overlap add are only found here.
+- the shaping and reshaping of the input tensors require contiguous() which allocates a contiguous chunk of memory in the hardware
+-
+
+# Generally
+
 -
 
 # Resources
@@ -29,3 +37,8 @@ Scaffold for architecting / building the model. The code is not runnable. The ad
 - [Asteroid](https://www.example.com)
 - [SpeechBrain](https://github.com/speechbrain/speechbrain/)
 - [Jusper](https://github.com/JusperLee/Dual-Path-RNN-Pytorch)
+- [Karpathy (ChatGPT researcher) making a model from scratch](https://www.youtube.com/watch?v=kCc8FmEb1nY)
+
+# Sanity check notes
+
+- [Excalidraw notes](https://excalidraw.com/#room=7506e0242b69ba2cd0c1,C82QAUx-XFqGQ5HC_57x6A)
