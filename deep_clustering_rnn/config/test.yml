@@ -1,9 +1,9 @@
 #### general settings
-name: DPCL_optim
+name: DPCL_optim_jusper
 use_tb_logger: true
 num_spks: 2
 #### datasets
-cmvn_file: /home/likai/data1/DPCL/cmvn.ark
+cmvn_file: ../cmvn.ark
 gpu: true
 audio_setting:
   window: hann
@@ -11,9 +11,8 @@ audio_setting:
   window_length: 256
   hop_length: 64
   center: true
-  is_mag: false  # abs(tf-domain)
-  is_log: false   # log(tf-domain)
-    
+  is_mag: false # abs(tf-domain)
+  is_log: false # log(tf-domain)
 
 #### network structures
 DPCL:
@@ -25,17 +24,22 @@ DPCL:
   bidirectional: true
   activation: Tanh
 
+#### training settings: learning rate scheme, loss
+train:
+  epoch: 100
+  early_stop: 10
+  path: ./checkpoint
+  is_gpu: false # change to true if GPU / CUDA is available
 
 #### Resume training settings
 resume:
   state: false
-  path: /home/likai/Desktop/DPCL/checkpoint
-
+  path: ./checkpoint
 
 #### logger
 logger:
   name: DPCL
-  path: /home/likai/Desktop/DPCL/checkpoint
+  path: ./checkpoint
   screen: true
   tofile: false
   print_freq: 100

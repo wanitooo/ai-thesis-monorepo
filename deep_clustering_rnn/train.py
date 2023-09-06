@@ -8,7 +8,8 @@ from config import option
 import logging
 from logger import set_logger
 from model import model
-from data_loader import Dataloader, AudioData
+from data_loader import AudioData
+from data_loader.dataloader import dataset, dataloader
 
 
 
@@ -18,8 +19,8 @@ def make_dataloader(opt):
         opt['datasets']['train']['dataroot_mix'], **opt['datasets']['audio_setting'])
     train_target_readers = [AudioData(opt['datasets']['train']['dataroot_targets'][0], **opt['datasets']['audio_setting']),
                             AudioData(opt['datasets']['train']['dataroot_targets'][1], **opt['datasets']['audio_setting'])]
-    train_dataset = Dataloader.dataset(train_mix_reader, train_target_readers)
-    train_dataloader = Dataloader.dataloader(
+    train_dataset = dataset(train_mix_reader, train_target_readers)
+    train_dataloader = dataloader(
         train_dataset, **opt['datasets']['dataloader_setting'])
 
     # make validation dataloader
@@ -27,8 +28,8 @@ def make_dataloader(opt):
         opt['datasets']['val']['dataroot_mix'], **opt['datasets']['audio_setting'])
     val_target_readers = [AudioData(opt['datasets']['val']['dataroot_targets'][0], **opt['datasets']['audio_setting']),
                           AudioData(opt['datasets']['val']['dataroot_targets'][1], **opt['datasets']['audio_setting'])]
-    val_dataset = Dataloader.dataset(val_mix_reader, val_target_readers)
-    val_dataloader = Dataloader.dataloader(
+    val_dataset = dataset(val_mix_reader, val_target_readers)
+    val_dataloader = dataloader(
         val_dataset, **opt['datasets']['dataloader_setting'])
     return train_dataloader, val_dataloader
 
@@ -71,4 +72,3 @@ def train():
 
 if __name__ == "__main__":
     train()
-
