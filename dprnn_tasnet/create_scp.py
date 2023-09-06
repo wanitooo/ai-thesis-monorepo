@@ -8,15 +8,17 @@ test_mix_scp = 'tt_mix.scp'
 test_s1_scp = 'tt_s1.scp'
 test_s2_scp = 'tt_s2.scp'
 
-train_mix = '/home/likai/likai/Dataset/wsj0-mix/2speakers/wav8k/min/tr/mix'
-train_s1 = '/home/likai/likai/Dataset/wsj0-mix/2speakers/wav8k/min/tr/s1'
-train_s2 = '/home/likai/likai/Dataset/wsj0-mix/2speakers/wav8k/min/tr/s2'
+# Change to correct directories if needed
+train_mix = '../dataset/train/mix_clean'
+train_s1 = '../dataset/train/s1'
+train_s2 = '../dataset/train/s2'
 
-test_mix = '/home/likai/likai/Dataset/wsj0-mix/2speakers/wav8k/min/tt/mix'
-test_s1 = '/home/likai/likai/Dataset/wsj0-mix/2speakers/wav8k/min/tt/s1'
-test_s2 = '/home/likai/likai/Dataset/wsj0-mix/2speakers/wav8k/min/tt/s2'
+test_mix = '../dataset/test/mix_clean'
+test_s1 = '../dataset/test/s1'
+test_s2 = '../dataset/test/s2'
 
-tr_mix = open(train_mix_scp,'w')
+
+tr_mix = open(train_mix_scp, 'w')
 for root, dirs, files in os.walk(train_mix):
     files.sort()
     for file in files:
@@ -24,7 +26,7 @@ for root, dirs, files in os.walk(train_mix):
         tr_mix.write('\n')
 
 
-tr_s1 = open(train_s1_scp,'w')
+tr_s1 = open(train_s1_scp, 'w')
 for root, dirs, files in os.walk(train_s1):
     files.sort()
     for file in files:
@@ -32,7 +34,7 @@ for root, dirs, files in os.walk(train_s1):
         tr_s1.write('\n')
 
 
-tr_s2 = open(train_s2_scp,'w')
+tr_s2 = open(train_s2_scp, 'w')
 for root, dirs, files in os.walk(train_s2):
     files.sort()
     for file in files:
@@ -40,8 +42,7 @@ for root, dirs, files in os.walk(train_s2):
         tr_s2.write('\n')
 
 
-
-tt_mix = open(test_mix_scp,'w')
+tt_mix = open(test_mix_scp, 'w')
 for root, dirs, files in os.walk(test_mix):
     files.sort()
     for file in files:
@@ -49,7 +50,7 @@ for root, dirs, files in os.walk(test_mix):
         tt_mix.write('\n')
 
 
-tt_s1 = open(test_s1_scp,'w')
+tt_s1 = open(test_s1_scp, 'w')
 for root, dirs, files in os.walk(test_s1):
     files.sort()
     for file in files:
@@ -57,7 +58,7 @@ for root, dirs, files in os.walk(test_s1):
         tt_s1.write('\n')
 
 
-tt_s2 = open(test_s2_scp,'w')
+tt_s2 = open(test_s2_scp, 'w')
 for root, dirs, files in os.walk(test_s2):
     files.sort()
     for file in files:
@@ -68,11 +69,12 @@ cv_mix_scp = 'cv_mix.scp'
 cv_s1_scp = 'cv_s1.scp'
 cv_s2_scp = 'cv_s2.scp'
 
-cv_mix = '/home/likai/likai/Dataset/wsj0-mix/2speakers/wav8k/min/cv/mix'
-cv_s1 = '/home/likai/likai/Dataset/wsj0-mix/2speakers/wav8k/min/cv/s1'
-cv_s2 = '/home/likai/likai/Dataset/wsj0-mix/2speakers/wav8k/min/cv/s2'
+# Change file path if needed
+cv_mix = '../dataset/val/mix_clean'
+cv_s1 = '../dataset/val/s1'
+cv_s2 = '../dataset/val/s2'
 
-cv_mix_file = open(cv_mix_scp,'w')
+cv_mix_file = open(cv_mix_scp, 'w')
 for root, dirs, files in os.walk(cv_mix):
     files.sort()
     for file in files:
@@ -80,7 +82,7 @@ for root, dirs, files in os.walk(cv_mix):
         cv_mix_file.write('\n')
 
 
-cv_s1_file = open(cv_s1_scp,'w')
+cv_s1_file = open(cv_s1_scp, 'w')
 for root, dirs, files in os.walk(cv_s1):
     files.sort()
     for file in files:
@@ -88,7 +90,7 @@ for root, dirs, files in os.walk(cv_s1):
         cv_s1_file.write('\n')
 
 
-cv_s2_file = open(cv_s2_scp,'w')
+cv_s2_file = open(cv_s2_scp, 'w')
 for root, dirs, files in os.walk(cv_s2):
     files.sort()
     for file in files:

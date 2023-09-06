@@ -1,45 +1,26 @@
-# Dual-path-RNN-Pytorch (Unedited - 8/22/203)
+# Dual-path-RNN-Pytorch
 
-Dual-path RNN: efficient long sequence modeling for time-domain single-channel speech separation implemented by Pytorch
+## Requirement
 
-If you have any questions, you can ask them through the issue.
+Install requirements and dependencies in a virtual environment (any name will do). This is to avoid possible dependency versioning conflicts.
 
-If you find this project helpful, you can give me a star generously.
-
-Demo Pages: [Results of pure speech separation model](https://cslikai.cn/project/Pure-Audio/)
-
-# Plan
-
-- [x] 2020-02-01: Reading article “[Dual-path RNN: efficient long sequence modeling for time-domain single-channel speech separation](https://arxiv.org/abs/1910.06379 "Dual-path RNN: efficient long sequence modeling for time-domain single-channel speech separation")”. Zhihu Article link "[阅读笔记”Dual-path RNN for Speech Separation“](https://zhuanlan.zhihu.com/p/104606356 "阅读笔记”Dual-path RNN for Speech Separation“")". Blog Article link "[阅读笔记《Dual-path RNN for speech separation》](https://www.likai.show/archives/dual-path-rnn "阅读笔记《Dual-path RNN for speech separation》")". Both articles are interpretations of the paper. If you have any questions, welcome to discuss with me
-
-- [x] 2020-02-02: Complete data preprocessing, data set code. Dataset Code: [/data_loader/Dataset.py](https://github.com/JusperLee/Dual-path-RNN-Pytorch/blob/master/data_loader/Dataset.py)
-
-- [x] 2020-02-03: Complete Conv-TasNet Framework (Update **/model/model.py, Trainer_Tasnet.py, Train_Tasnet.py**)
-
-- [x] 2020-02-07: Complete Training code. (Update **/model/model_rnn.py**) and Test parameters and some details are being adjusted.
-
-- [x] 2020-02-08: Fixed the code's bug.
-
-- [x] 2020-02-11: Complete Testing code.
-
-# Dataset
-
-We used the WSJ0 dataset as our training, test, and validation sets. Below is the data download link and mixed audio code for WSJ0.
-
-- [Audio mix Sample](https://www.merl.com/demos/deep-clustering/media/female-female-mixture.wav)
-
-- [WSJ0 Dataset](https://catalog.ldc.upenn.edu/LDC93S6A)
-
-- [Create Dataset](https://www.merl.com/demos/deep-clustering/create-speaker-mixtures.zip)
+```
+virtualenv dptasnet
+source dptasnet/bin/activate
+pip install -r requirements.txt
+```
 
 # Training
+
+Skip mo muna yung Conv-TasNet instructions drin, and go straight to Dual Path RNN instructions. I think the Conv-Tasnet model part is integrated in the Dual Path model na based sa code but it's not explicitly stated (could be wrong). Also in both train.py and train_rnn.py, nauuna yung validation sa logs, even though una yung training dapat sa code. Though after some iterations lalabas narin yung train (dapat). See log/conv_Tasnet/conv-tasnet.log
 
 ## Training for Conv-TasNet model
 
 1. First, you need to generate the scp file using the following command. The content of the scp file is "filename && path".
+   Change filepath to correct directories if needed
 
 ```shell
-python create_scp.py
+python3 create_scp.py
 ```
 
 2. Then you can modify the training and model parameters through "[config/Conv_Tasnet/train.yml](https://github.com/JusperLee/Dual-Path-RNN-Pytorch/tree/master/config/Conv_Tasnet)".
@@ -52,7 +33,7 @@ vim train.yml
 3. Then use the following command in the root directory to train the model.
 
 ```shell
-python train_Tasnet.py --opt config/Conv_Tasnet/train.yml
+python3 train_Tasnet.py --opt config/Conv_Tasnet/train.yml
 ```
 
 ## Training for Dual Path RNN model
@@ -60,20 +41,20 @@ python train_Tasnet.py --opt config/Conv_Tasnet/train.yml
 1. First, you need to generate the scp file using the following command. The content of the scp file is "filename && path".
 
 ```shell
-python create_scp.py
+python3 create_scp.py
 ```
 
 2. Then you can modify the training and model parameters through "[config/Dual_RNN/train.yml](https://github.com/JusperLee/Dual-Path-RNN-Pytorch/tree/master/config/Dual_RNN "config / Dual_RNN / train.yml")".
 
 ```shell
 cd config/Dual_RNN
-vim train.yml
+vim train_rnn.yml
 ```
 
 3. Then use the following command in the root directory to train the model.
 
 ```shell
-python train_rnn.py --opt config/Dual_RNN/train.yml
+python3 train_rnn.py --opt config/Dual_RNN/train_rnn.yml
 ```
 
 # Inference
@@ -85,13 +66,17 @@ You need to modify the default parameters in the test_tasnet.py file, including 
 ### For multi-audio
 
 ```shell
-python test_tasnet.py
+python3 test_tasnet.py
+or
+python3 test_tasnet.py -nogpu true
 ```
 
 ### For single-audio
 
+- Not tried
+
 ```shell
-python test_tasnet_wav.py
+python3 test_tasnet_wav.py
 ```
 
 ## Dual-Path-RNN
@@ -101,24 +86,24 @@ You need to modify the default parameters in the test_dualrnn.py file, including
 ### For multi-audio
 
 ```shell
-python test_dualrnn.py
+python3 dualrnn_test.py
+or
+python3 dualrnn_test.py -nogpu true
 ```
 
 ### For single-audio
 
+- Not tried
+
 ```shell
-python test_dualrnn_wav.py
+python3 dualrnn_test_wav.py
 ```
 
 # Pretrain Model
 
-## Conv-TasNet
+- [Conv-TasNet model](https://drive.google.com/open?id=1MRe4jiwgtAFZErjz-LWuuyEG8VGSU0YS "Google Driver")
 
-[Conv-TasNet model](https://drive.google.com/open?id=1MRe4jiwgtAFZErjz-LWuuyEG8VGSU0YS "Google Driver")
-
-## Dual-Path-RNN
-
-[Dual-Path-RNN model](https://drive.google.com/open?id=1TInJB-idggkKJ5YkNvnrTopum_HgX3_o "Google Driver")
+- [Dual-Path-RNN model](https://drive.google.com/open?id=1TInJB-idggkKJ5YkNvnrTopum_HgX3_o "Google Driver")
 
 # Result
 

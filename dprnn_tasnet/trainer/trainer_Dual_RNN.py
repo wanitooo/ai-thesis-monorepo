@@ -1,16 +1,14 @@
+from torch.nn.parallel import data_parallel
+import matplotlib.pyplot as plt
+import os
+import torch
+from model.loss import Loss
+from logger.set_logger import setup_logger
+import logging
+import time
+from utils.util import check_parameters
 import sys
 sys.path.append('../')
-
-from utils.util import check_parameters
-import time
-import logging
-from logger.set_logger import setup_logger
-from model.loss import Loss
-import torch
-import os
-import matplotlib.pyplot as plt
-from torch.nn.parallel import data_parallel
-
 
 
 class Trainer(object):
@@ -40,6 +38,7 @@ class Trainer(object):
             self.logger.info(
                 'Loading Dual-Path-RNN parameters: {:.3f} Mb'.format(check_parameters(self.dualrnn)))
         else:
+            self.gpuid = False
             self.logger.info('Load CPU ...........')
             self.device = torch.device('cpu')
             self.dualrnn = Dual_RNN.to(self.device)
@@ -71,6 +70,7 @@ class Trainer(object):
             self.clip_norm = 0
 
     def train(self, epoch):
+        self.logger.info("Inside train()")
         self.logger.info(
             'Start training from epoch: {:d}, iter: {:d}'.format(epoch, 0))
         self.dualrnn.train()
@@ -84,8 +84,9 @@ class Trainer(object):
             self.optimizer.zero_grad()
 
             if self.gpuid:
-                out = torch.nn.parallel.data_parallel(self.dualrnn,mix,device_ids=self.gpuid)
-                #out = self.dualrnn(mix)
+                out = torch.nn.parallel.data_parallel(
+                    self.dualrnn, mix, device_ids=self.gpuid)
+                # out = self.dualrnn(mix)
             else:
                 out = self.dualrnn(mix)
 
@@ -112,6 +113,7 @@ class Trainer(object):
         return total_loss
 
     def validation(self, epoch):
+        self.logger.info("Inside validation()")
         self.logger.info(
             'Start Validation from epoch: {:d}, iter: {:d}'.format(epoch, 0))
         self.dualrnn.eval()
@@ -126,12 +128,13 @@ class Trainer(object):
                 self.optimizer.zero_grad()
 
                 if self.gpuid:
-                    #model = torch.nn.DataParallel(self.dualrnn)
-                    #out = model(mix)
-                    out = torch.nn.parallel.data_parallel(self.dualrnn,mix,device_ids=self.gpuid)
+                    # model = torch.nn.DataParallel(self.dualrnn)
+                    # out = model(mix)
+                    out = torch.nn.parallel.data_parallel(
+                        self.dualrnn, mix, device_ids=self.gpuid)
                 else:
                     out = self.dualrnn(mix)
-                
+
                 l = Loss(out, ref)
                 epoch_loss = l
                 total_loss += epoch_loss.item()
@@ -150,45 +153,54 @@ class Trainer(object):
     def run(self):
         train_loss = []
         val_loss = []
-        with torch.cuda.device(self.gpuid[0]):
-            self.save_checkpoint(self.cur_epoch, best=False)
+        if self.gpuid and torch.cuda.is_available():
+            torch.cuda.set_device(self.gpuid[0])
+        else:
+            # Pytorch defaults calculations to CPU when
+            device = torch.device(self.device)
+        # with torch.cuda.device(self.gpuid[0]): # Deleted the with block, incompatible with cpu code
+        # Should still work with gpu? else put back with block
+        # self.logger.info("Current device", self.device)
+        self.save_checkpoint(self.cur_epoch, best=False)
+        v_loss = self.validation(self.cur_epoch)
+        best_loss = v_loss
+
+        self.logger.info("Starting epoch from {:d}, loss = {:.4f}".format(
+            self.cur_epoch, best_loss))
+        no_improve = 0
+        # starting training part
+        while self.cur_epoch < self.total_epoch:
+            self.cur_epoch += 1
+            self.logger.info("TRAINING IN PROGRESS")
+            t_loss = self.train(self.cur_epoch)
+            self.logger.info("VALIDATION IN PROGRESS")
             v_loss = self.validation(self.cur_epoch)
-            best_loss = v_loss
-            
-            self.logger.info("Starting epoch from {:d}, loss = {:.4f}".format(
-                self.cur_epoch, best_loss))
-            no_improve = 0
-            # starting training part
-            while self.cur_epoch < self.total_epoch:
-                self.cur_epoch += 1
-                t_loss = self.train(self.cur_epoch)
-                v_loss = self.validation(self.cur_epoch)
 
-                train_loss.append(t_loss)
-                val_loss.append(v_loss)
+            train_loss.append(t_loss)
+            val_loss.append(v_loss)
 
-                # schedule here
-                self.scheduler.step(v_loss)
+            # schedule here
+            self.scheduler.step(v_loss)
 
-                if v_loss >= best_loss:
-                    no_improve += 1
-                    self.logger.info(
-                        'No improvement, Best Loss: {:.4f}'.format(best_loss))
-                else:
-                    best_loss = v_loss
-                    no_improve = 0
-                    self.save_checkpoint(self.cur_epoch, best=True)
-                    self.logger.info('Epoch: {:d}, Now Best Loss Change: {:.4f}'.format(
-                        self.cur_epoch, best_loss))
+            if v_loss >= best_loss:
+                no_improve += 1
+                self.logger.info(
+                    'No improvement, Best Loss: {:.4f}'.format(best_loss))
+            else:
+                best_loss = v_loss
+                no_improve = 0
+                self.save_checkpoint(self.cur_epoch, best=True)
+                self.logger.info('Epoch: {:d}, Now Best Loss Change: {:.4f}'.format(
+                    self.cur_epoch, best_loss))
 
-                if no_improve == self.early_stop:
-                    self.logger.info(
-                        "Stop training cause no impr for {:d} epochs".format(
-                            no_improve))
-                    break
-            self.save_checkpoint(self.cur_epoch, best=False)
-            self.logger.info("Training for {:d}/{:d} epoches done!".format(
-                self.cur_epoch, self.total_epoch))
+            if no_improve == self.early_stop:
+                self.logger.info(
+                    "Stop training cause no impr for {:d} epochs".format(
+                        no_improve))
+                break
+        self.save_checkpoint(self.cur_epoch, best=False)
+        self.logger.info("Training for {:d}/{:d} epoches done!".format(
+            self.cur_epoch, self.total_epoch))
 
         # draw loss image
         plt.title("Loss of train and test")
@@ -196,7 +208,7 @@ class Trainer(object):
         plt.plot(x, train_loss, 'b-', label=u'train_loss', linewidth=0.8)
         plt.plot(x, val_loss, 'c-', label=u'val_loss', linewidth=0.8)
         plt.legend()
-        #plt.xticks(l, lx)
+        # plt.xticks(l, lx)
         plt.ylabel('loss')
         plt.xlabel('epoch')
         plt.savefig('loss.png')
