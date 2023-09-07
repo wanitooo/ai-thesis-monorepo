@@ -34,7 +34,7 @@ Scaffold for architecting / building the model. The code is not runnable. The ad
 # Resources
 
 - [Luo's implementation](https://github.com/yluo42/TAC/blob/master/utility/models.py)
-- [Asteroid](https://www.example.com)
+- [Asteroid](https://github.com/asteroid-team/asteroid/blob/68c26692da9bfc545e8cae0a9a650296dce34c60/asteroid/models/dprnn_tasnet.py)
 - [SpeechBrain](https://github.com/speechbrain/speechbrain/)
 - [Jusper](https://github.com/JusperLee/Dual-Path-RNN-Pytorch)
 - [Karpathy (ChatGPT researcher) making a model from scratch](https://www.youtube.com/watch?v=kCc8FmEb1nY)

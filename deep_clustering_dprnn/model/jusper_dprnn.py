@@ -237,9 +237,9 @@ class Dual_RNN_Block(nn.Module):  # Corresponds to only B)
         return out
 
 
-class Dual_Path_RNN(nn.Module):  # All together
+class Dual_Path_RNN(nn.Module):  # The DPRNN block all together
     '''
-       Implementation of the Dual-Path-RNN model # with tasnet?
+       Implementation of the Dual-Path-RNN model 
        input:
             in_channels: The number of expected features in the input x
             out_channels: The number of features in the hidden state h

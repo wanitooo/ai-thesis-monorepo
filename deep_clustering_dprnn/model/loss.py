@@ -1,6 +1,7 @@
 import torch
 from itertools import permutations
 
+
 def sisnr(x, s, eps=1e-8):
     """
     calculate training loss
@@ -36,7 +37,7 @@ def Loss(ests, egs):
         return sum(
             [sisnr(ests[s], refs[t])
              for s, t in enumerate(permute)]) / len(permute)
-             # average the value
+        # average the value
 
     # P x N
     N = egs[0].size(0)
