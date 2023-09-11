@@ -63,9 +63,19 @@ class Trainer(object):
         num_index = 1
         start_time = time.time()
         for mix_wave, target_waves, non_slient in self.train_dataloader:
+            if (num_index > 1):
+                break
+            self.logger.info(f'mix_wave.data.size() at train(): {mix_wave.data.size()}'
+                             )  # fed to the model
+            self.logger.info(f'target_waves.data.size() at train(): {target_waves.data.size()}',
+                             )  # used in calculating loss
+            # print("mix_wave.data.size() at train(),", mix_wave.data.size()) # Does not print
+            # print("target_waves.data.size() at train(), self.dpcl(mix_wave)",
+            #       target_waves.data.size())
             mix_wave = mix_wave.to(self.device)
             target_waves = target_waves.to(self.device)
             non_slient = non_slient.to(self.device)
+            # self.logger.debug('x.shape at train(), self.dpcl(mix_wave) {:d}'.format()) cant otuput tte
             mix_embs = self.dpcl(mix_wave)
             l = Loss(mix_embs, target_waves, non_slient, self.num_spks)
             epoch_loss = l.loss()

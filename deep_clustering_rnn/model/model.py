@@ -31,6 +31,7 @@ class DPCL(nn.Module):
         if not is_train:
             x = torch.unsqueeze(x, 0)
         # B x T x F -> B x T x hidden
+        # print("x.shape", x.shape) # errors
         x, _ = self.blstm(x)
         if is_train:
             x, _ = pad_packed_sequence(x, batch_first=True)
