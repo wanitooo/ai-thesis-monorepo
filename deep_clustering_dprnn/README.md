@@ -1,6 +1,8 @@
 # Combining both Dual Path RNN and Deep Clustering
 
-Scaffold for architecting / building the model. The code is not runnable. The added code are for reference/editing later. Attempts at making the DPCL-DPRNN model are at model/initial_dpcl_dprnn.
+Scaffold for architecting / building the model. The added code are for reference/editing later. Attempts at making the DPCL-DPRNN model are at model/initial_dpcl_dprnn.
+
+- 9/16/2023: The scripts are now runnable, the model is not yet trainable, fixed mismatches until overlap add
 
 # Instructions
 
