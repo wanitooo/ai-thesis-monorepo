@@ -1,1 +1,1 @@
-from .trainer_Tasnet import *
+from .trainer import *

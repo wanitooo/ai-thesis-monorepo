@@ -2,10 +2,33 @@
 
 Scaffold for architecting / building the model. The code is not runnable. The added code are for reference/editing later. Attempts at making the DPCL-DPRNN model are at model/initial_dpcl_dprnn.
 
-## Notes
+# Instructions
 
-- Utility, training, and testing code should be based on the latest iteration that we have (Dual path repo)
--
+Install requirements and dependencies in a virtual environment (any name will do). This is to avoid possible dependency versioning conflicts.
+
+```
+virtualenv dcdprnn
+source dcdprnn/bin/activate
+pip install -r requirements.txt
+```
+
+## Training
+
+```shell
+python3 create_scp.py
+```
+
+```shell
+python3 train.py --opt ./config/DPCL_DPRNN/train.yml
+```
+
+## Testing
+
+- Not tried
+
+```shell
+python3 test.py -scp tt_mix.scp -opt ./config/DPCL_DPRNN/train.yml -save_file ./result
+```
 
 # Considerations for building / architecting DP DCPL
 
@@ -29,7 +52,10 @@ Scaffold for architecting / building the model. The code is not runnable. The ad
 
 # Generally
 
--
+### Possible mismatch:
+
+- DPCL expects indexes of the data to be fed in to it [T,F], this is so it could build an embedding “affinity matrix” (K) so it needs to reference which is which
+- DPRNN expect the length of a sequential input [B, N, L] in segmentation, this is because it wants to chunk the inputs into blocks first
 
 # Resources
 

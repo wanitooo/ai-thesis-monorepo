@@ -1,7 +1,11 @@
+import sys
+sys.path.append('./utils')
+sys.path.append('./*')
+
 import torch
 from config.option import parse
 from sklearn.cluster import KMeans
-from data_loader import AudioData
+from deep_clustering_dprnn.data_loader import AudioData
 import numpy as np
 from utils import util
 from config import option
@@ -12,7 +16,10 @@ import os
 import librosa
 import pickle
 from tqdm import tqdm
-#import soundfile as sf
+
+
+
+# import soundfile as sf
 
 
 class Separation(object):
@@ -37,7 +44,8 @@ class Separation(object):
                 'cuda' if torch.cuda.is_available() else 'cpu')
             self.dpcl = dpcl
         self.dpcl = dpcl
-        ckp = torch.load('./checkpoint/DPCL_optim_jusper/best.pt', map_location=self.device)
+        ckp = torch.load('./checkpoint/DPCL_optim_jusper/best.pt',
+                         map_location=self.device)
         self.dpcl.load_state_dict(ckp['model_state_dict'])
         self.dpcl.eval()
         self.waves = AudioData(scp_file, **opt['audio_setting'])
@@ -54,7 +62,7 @@ class Separation(object):
         # TF x D
         mix_emb = self.dpcl(torch.tensor(
             wave, dtype=torch.float32), is_train=False)
-        
+
         mix_emb = mix_emb.detach().numpy()
         # N x D
         mix_emb = mix_emb[non_silent.reshape(-1)]
@@ -99,7 +107,7 @@ class Separation(object):
                 os.makedirs(output_file, exist_ok=True)
 
                 librosa.output.write_wav(output_file+'/'+name, i_stft, 8000)
-                #sf.write(output_file+'/'+name, i_stft, 8000)
+                # sf.write(output_file+'/'+name, i_stft, 8000)
             index += 1
         print('Processing {} utterances'.format(index))
 

@@ -1,0 +1,98 @@
+#### general settings
+name: DPCL_optim
+use_tb_logger: true
+num_spks: 2
+#### datasets
+datasets:
+  train:
+    dataroot_mix: ./tr_mix.scp
+    dataroot_targets: [./tr_s1.scp, ./tr_s2.scp]
+
+  val:
+    dataroot_mix: ./cv_mix.scp
+    dataroot_targets: [./cv_s1.scp, ./cv_s2.scp]
+
+  dataloader_setting:
+    shuffle: true
+    num_workers: 16 # per GPU # can be changed for lower load
+    batch_size: 4 # can be changed for lower load
+    cmvn_file: ./cmvn.ark
+
+  audio_setting:
+    window: hann
+    nfft: 256
+    window_length: 256
+    hop_length: 64
+    center: False
+    is_mag: True # abs(tf-domain)
+    is_log: True # log(tf-domain)
+
+#### network structures
+DPCL:
+  # num_layer: 4 # 6 IN DPRNN
+  nfft: 129 # nfft/2+1
+  hidden_channels: 300 # changed from hidden_cells
+  emb_D: 40
+  dropout: 0.0
+  bidirectional: true
+  activation: Tanh
+  # in_channels: 256
+  # out_channels: 64
+  # hidden_channels: 128
+  # kernel_size: 2
+  rnn_type: LSTM
+  norm: gln # changed from ln
+  dropout: 0
+  bidirectional: true
+  num_layers: 6 # change to something lower
+  K: 10 # changed from 250
+  num_spks: 2
+
+  
+
+Dual_Path_RNN:
+  in_channels: 256
+  out_channels: 64
+  hidden_channels: 128
+  kernel_size: 2
+  rnn_type: BLSTM
+  norm: ln
+  dropout: 0
+  bidirectional: true
+  num_layers: 6
+  K: 250
+  num_spks: 2
+
+#### training settings: learning rate scheme, loss
+train:
+  epoch: 100
+  early_stop: 10
+  path: ./checkpoint
+  is_gpu: false # change to true if GPU / CUDA is available
+
+#### Optimizer settings
+optim:
+  name: RMSprop ### Adam, RMSprop, SGD
+  lr: 1.0e-5
+  momentum: 0.9
+  weight_decay: 0
+  clip_norm: 200
+
+#### scheduler settings
+scheduler:
+  min_lr: !!float 1e-8
+  patience: 2
+  factor: 0.5
+
+#### Resume training settings
+resume:
+  state: false
+  path: ./checkpoint
+
+#### logger
+logger:
+  name: DPCL
+  path: ./checkpoint
+  screen: true
+  tofile: false
+  print_freq: 100

@@ -192,7 +192,7 @@ class Dual_RNN_Block(nn.Module):  # Corresponds to only B)
 
     def forward(self, x):
         '''
-            B == BATCH, N==?, K==Length of the chunks, S==SPEAKERS?
+            B == BATCH, N==feature dims, K==Length of the chunks (from L length of segment), S==Number of chunks
            x: [B, N, K, S]
            out: [Spks, B, N, K, S]
         '''
@@ -338,13 +338,14 @@ class Dual_Path_RNN(nn.Module):  # The DPRNN block all together
     def _Segmentation(self, input, K):  # Corresponds to A)
         '''
            the segmentation stage splits
-           K: chunks of length
+           K: length of chunks
            P: hop size
-           input: [B, N, L]
+           input: [B, N, L] # N = feature dims, L=Length of segment
            output: [B, N, K, S]
         '''
         B, N, L = input.shape
         P = K // 2
+        # padding may not be needed, as the input would have gone through pre processing with STFT
         input, gap = self._padding(input, K)
         # [B, N, K, S]
         input1 = input[:, :, :-P].contiguous().view(B, N, -1, K)
@@ -377,6 +378,7 @@ class Dual_Path_RNN(nn.Module):  # The DPRNN block all together
 
 
 class Dual_RNN_model(nn.Module):  # With conv tasnet
+    # WILL NOT BE CALLING
     '''
        model of Dual Path RNN # with conv-tasnet?, the encoder / decoder model was a tasnet specific thing iirc
 

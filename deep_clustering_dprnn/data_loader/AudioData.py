@@ -1,87 +1,46 @@
-import torch.nn.functional as F
-from utils import util
 import torch
-import torchaudio
+from utils.stft_istft import STFT
+import utils.util as ut
 import sys
 sys.path.append('../')
 
 
-def read_wav(fname, return_rate=False):
+class AudioData(object):
     '''
-         Read wavfile using Pytorch audio
-         input:
-               fname: wav file path
-               return_rate: Whether to return the sampling rate
-         output:
-                src: output tensor of size C x L 
-                     L is the number of audio frames 
-                     C is the number of channels. 
-                sr: sample rate
-    '''
-    src, sr = torchaudio.load(fname, channels_first=True)
-    if return_rate:
-        return src.squeeze(), sr
-    else:
-        return src.squeeze()
-
-
-def write_wav(fname, src, sample_rate):
-    '''
-         Write wav file
-         input:
-               fname: wav file path
-               src: frames of audio
-               sample_rate: An integer which is the sample rate of the audio
-         output:
-               None
-    '''
-    torchaudio.save(fname, src, sample_rate)
-
-
-class AudioReader(object):
-    '''
-        Class that reads Wav format files
-        Input:
-            scp_path (str): a different scp file address
-            sample_rate (int, optional): sample rate (default: 8000)
-            chunk_size (int, optional): split audio size (default: 32000(4 s))
-            least_size (int, optional): Minimum split size (default: 16000(2 s))
-        Output:
-            split audio (list)
+        Loading wave file
+        scp_file: the scp file path
+        other kwargs is stft's kwargs
+        is_mag: if True, abs(stft)
     '''
 
-    def __init__(self, scp_path, sample_rate=8000, chunk_size=32000, least_size=16000):
-        super(AudioReader, self).__init__()
-        self.sample_rate = sample_rate
-        self.index_dict = util.handle_scp(scp_path)
-        self.keys = list(self.index_dict.keys())
-        self.audio = []
-        self.chunk_size = chunk_size
-        self.least_size = least_size
-        self.split()
+    def __init__(self, scp_file, window='hann', nfft=256, window_length=256, hop_length=64, center=False, is_mag=True, is_log=True):
+        self.wave = ut.read_scp(scp_file)
+        self.wave_keys = [key for key in self.wave.keys()]
+        self.STFT = STFT(window=window, nfft=nfft,
+                         window_length=window_length, hop_length=hop_length, center=center)
+        self.is_mag = is_mag
+        self.is_log = is_log
 
-    def split(self):
-        '''
-            split audio with chunk_size and least_size
-        '''
-        for key in self.keys:
-            utt = read_wav(self.index_dict[key])
-            if utt.shape[0] < self.least_size:
-                continue
-            if utt.shape[0] > self.least_size and utt.shape[0] < self.chunk_size:
-                gap = self.chunk_size-utt.shape[0]
-                self.audio.append(F.pad(utt, (0, gap), mode='constant'))
-            if utt.shape[0] >= self.chunk_size:
-                start = 0
-                while True:
-                    if start + self.chunk_size > utt.shape[0]:
-                        break
-                    self.audio.append(utt[start:start+self.chunk_size])
-                    start += self.least_size
+    def __len__(self):
+        return len(self.wave_keys)
 
+    def stft(self, wave_path):
+        samp = ut.read_wav(wave_path)
+        return self.STFT.stft(samp, self.is_mag, self.is_log)
+
+    def __iter__(self):
+        for key in self.wave_keys:
+            yield self.stft(self.wave[key])
+
+    def __getitem__(self, key):
+        if key not in self.wave_keys:
+            raise ValueError
+        return self.stft(self.wave[key])
 
 
 if __name__ == "__main__":
-    a = AudioReader("/home/likai/data1/create_scp/cv_mix.scp")
-    audio = a.audio
-    print(len(audio))
+    ad = AudioData("/home/likai/data1/create_scp/cv_mix.scp",
+                   is_mag=True, is_log=True)
+    audio = ad['011a010d_0.54422_20do010c_-0.54422.wav']
+    print(audio.shape)
+    print(ut.compute_non_silent(audio))

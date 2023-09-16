@@ -1,11 +1,9 @@
+import numpy as np
+from torch.utils.data import Dataset
+import torch
+from deep_clustering_dprnn.data_loader.DPRNN_AudioData import AudioReader
 import sys
 sys.path.append('../')
-
-from data_loader.AudioData import AudioReader
-import torch
-from torch.utils.data import Dataset
-
-import numpy as np
 
 
 class Datasets(Dataset):
@@ -33,7 +31,7 @@ class Datasets(Dataset):
 
 if __name__ == "__main__":
     dataset = Datasets("/home/likai/data1/create_scp/cv_mix.scp",
-                      ["/home/likai/data1/create_scp/cv_s1.scp", "/home/likai/data1/create_scp/cv_s2.scp"])
+                       ["/home/likai/data1/create_scp/cv_s1.scp", "/home/likai/data1/create_scp/cv_s2.scp"])
     for i in dataset.mix_audio:
         if i.shape[0] != 32000:
             print('fail')

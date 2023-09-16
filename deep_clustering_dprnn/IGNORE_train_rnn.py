@@ -1,21 +1,20 @@
+from trainer import trainer_Dual_RNN
+import torch
+import argparse
+from config import option
+import logging
+from logger import set_logger
+from model import model_rnn
+from deep_clustering_dprnn.data_loader.IGNORE_Dataset import Datasets
+from torch.utils.data import DataLoader as Loader
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 import sys
 sys.path.append('./')
-
-from torch.optim.lr_scheduler import ReduceLROnPlateau
-from torch.utils.data import DataLoader as Loader
-from data_loader.Dataset import Datasets
-from model import model_rnn
-from logger import set_logger
-import logging
-from config import option
-import argparse
-import torch
-from trainer import trainer_Dual_RNN
 
 
 def make_dataloader(opt):
     # make train's dataloader
-    
+
     train_dataset = Datasets(
         opt['datasets']['train']['dataroot_mix'],
         [opt['datasets']['train']['dataroot_targets'][0],
@@ -25,9 +24,9 @@ def make_dataloader(opt):
                               batch_size=opt['datasets']['dataloader_setting']['batch_size'],
                               num_workers=opt['datasets']['dataloader_setting']['num_workers'],
                               shuffle=opt['datasets']['dataloader_setting']['shuffle'])
-    
+
     # make validation dataloader
-    
+
     val_dataset = Datasets(
         opt['datasets']['val']['dataroot_mix'],
         [opt['datasets']['val']['dataroot_targets'][0],
@@ -37,7 +36,7 @@ def make_dataloader(opt):
                             batch_size=opt['datasets']['dataloader_setting']['batch_size'],
                             num_workers=opt['datasets']['dataloader_setting']['num_workers'],
                             shuffle=False)
-    
+
     return train_dataloader, val_dataloader
 
 
@@ -80,10 +79,11 @@ def train():
         factor=opt['scheduler']['factor'],
         patience=opt['scheduler']['patience'],
         verbose=True, min_lr=opt['scheduler']['min_lr'])
-    
+
     # build trainer
     logger.info('Building the Trainer of Dual-Path-RNN')
-    trainer = trainer_Dual_RNN.Trainer(train_dataloader, val_dataloader, Dual_Path_RNN, optimizer, scheduler, opt)
+    trainer = trainer_Dual_RNN.Trainer(
+        train_dataloader, val_dataloader, Dual_Path_RNN, optimizer, scheduler, opt)
     trainer.run()
 
 
