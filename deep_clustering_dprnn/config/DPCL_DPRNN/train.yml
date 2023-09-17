@@ -44,7 +44,7 @@ DPCL:
   norm: gln # changed from ln
   dropout: 0
   bidirectional: true
-  num_layers: 6 # change to something lower
+  num_layers: 2 # change to something lower
   K: 10 # changed from 250
   num_spks: 2
 

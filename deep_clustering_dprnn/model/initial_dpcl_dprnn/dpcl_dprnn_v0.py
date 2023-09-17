@@ -28,7 +28,7 @@ class DPCL_DPRNN(nn.Module):
 
     def __init__(self, nfft, hidden_channels,
                  dropout=0.0, bidirectional=True, activation="Tanh",
-                 rnn_type="LSTM", norm='ln', num_layers=6,  # rnn_type="BLSTM"
+                 rnn_type="LSTM", norm='ln', num_layers=6,
                  num_spks=2, emb_D=40,
                  K=250,
                  ):
@@ -70,9 +70,15 @@ class DPCL_DPRNN(nn.Module):
         # Unpack sequence first
         if is_train:
             x, _ = pad_packed_sequence(x, batch_first=True)
-        x, _ = self.dprnn(x)  # DPRNN takes x and outputs x with same shape
-        x = self.dropout(x)
+        # DPRNN will not output hidden states (x, _ = self.blstm())
+        print("x.shape before self.dprnn ", x.shape)
+        x = self.dprnn(x)  # DPRNN takes x and outputs x with same shape
 
+        # if is_train:
+        #     x, _ = pad_packed_sequence(x, batch_first=True)
+
+        x = self.dropout(x)
+        print("x.shape before self.linear ", x.shape)
         # B x T x hidden -> B x T x FD
         x = self.linear(x)
         x = self.activation(x)
@@ -218,7 +224,10 @@ class Dual_RNN_Block(nn.Module):  # Corresponds to only B) # This block is stand
 
     def forward(self, x):
         '''
-         B == BATCH, N==feature dims, K==Length of the chunks (from L length of segment), S==Number of chunks
+         B: BATCH
+         N: feature dims 
+         K: Length of the chunks (from L length of segment) 
+         S: Number of chunks
            x: [B, N, K, S]
            out: [Spks, B, N, K, S]
         '''
@@ -318,7 +327,7 @@ class Dual_Path_RNN(nn.Module):  # The DPRNN block all together # Has conv tasne
         '''
         # [B, N, L]
         x = self.norm(x)
-        print("AFTER NORM")
+        print("x.shape after norm: ", x.shape)
 
         # [B, N, L]
         # The convolutional layers, prelu, relu, etc., is not specified in the DPRNN paper
@@ -339,14 +348,19 @@ class Dual_Path_RNN(nn.Module):  # The DPRNN block all together # Has conv tasne
         # x = self.prelu(x)
         # x = self.conv2d(x)
         # [B*spks, N, K, S]
-        B, _, K, S = x.shape
+        B, N, K, S = x.shape
         print("x.shape after x = self.dual_rnn[i](x)", x.shape)
         # I stopped here 9/16/2023
         # TODO, change how .view() rearranges the tensors to match what it was orginally trying to do
         # It gave me this error so far:
         # in forward \n    x = x.view(B*self.num_spks, -1, K, S)
         # RuntimeError: shape '[8, -1, 10, 150]' is invalid for input of size 774000
-        x = x.view(B*self.num_spks, -1, K, S)
+        # Source of this error is view() retains the number of elements in the tensor,
+        # by doing B*num_spks the n of elements are mismatched
+        # Removing the parts that adds the dims for the num of speakers allows it to pass through
+        # We may not need the dims for the num of speakers (might be a ConvTasNet thing)
+
+        # x = x.view(B*self.num_spks, N, K, S)
         # [B*spks, N, L]
         x = self._over_add(x, gap)
         print("x.shape after _over_add", x.shape)
@@ -355,12 +369,14 @@ class Dual_Path_RNN(nn.Module):  # The DPRNN block all together # Has conv tasne
         # [spks*B, N, L]
         # x = self.end_conv1x1(x)
         # [B*spks, N, L] -> [B, spks, N, L]
-        _, N, L = x.shape
-        x = x.view(B, self.num_spks, N, L)
-        # x = self.activation(x)
+        # _, N, L = x.shape
+        # x = x.view(B, self.num_spks, N, L)
+        # x = self.activation(x) # there is an activation outside the block
         # [spks, B, N, L]
         # x = x.transpose(0, 1)
-
+        # return to original order, DPCL will do B x T x hidden -> B x T x FD, if left untouched it will do B x F x TD
+        x = x.permute(0, 1, 2).contiguous()
+        print("x.shape after permute before return", x.shape)
         return x
 
     def _padding(self, input, K):

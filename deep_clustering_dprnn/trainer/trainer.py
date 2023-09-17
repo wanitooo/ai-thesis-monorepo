@@ -110,6 +110,10 @@ class Trainer(object):
         start_time = time.time()
         with torch.no_grad():
             for mix_wave, target_waves, non_slient in self.val_dataloader:
+                self.logger.info(f'mix_wave.data.size() at validation(): {mix_wave.data.size()}'
+                                 )  # fed to the model
+                self.logger.info(f'target_waves.data.size() at validation(): {target_waves.data.size()}',
+                                 )  # used in calculating loss
                 mix_wave = mix_wave.to(self.device)
                 target_waves = target_waves.to(self.device)
                 non_slient = non_slient.to(self.device)
