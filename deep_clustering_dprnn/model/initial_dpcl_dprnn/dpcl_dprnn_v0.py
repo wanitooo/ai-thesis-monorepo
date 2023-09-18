@@ -63,13 +63,19 @@ class DPCL_DPRNN(nn.Module):
                   for train: B x TF x D
                   for test: TF x D
         '''
+        print("x.shape before not is_train ", x.shape)
+        # It takes in a 2dim tensor [?, NFFT]
         if not is_train:
             x = torch.unsqueeze(x, 0)
         # B x T x F -> B x T x hidden
         # x, _ = self.blstm(x)  # ORIGINAL
         # Unpack sequence first
+        print("x.shape before is_train ", x.shape)
         if is_train:
+            # It gets transformed back to a 3 dim tensor here [B, T, F]
             x, _ = pad_packed_sequence(x, batch_first=True)
+            print("x.shape is_train triggered", x.shape)
+
         # DPRNN will not output hidden states (x, _ = self.blstm())
         print("x.shape before self.dprnn ", x.shape)
         x = self.dprnn(x)  # DPRNN takes x and outputs x with same shape
