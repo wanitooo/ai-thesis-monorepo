@@ -35,8 +35,8 @@ class DPCL_DPRNN(nn.Module):
         super(DPCL_DPRNN, self).__init__()
         self.emb_D = emb_D
         # The goal is to replace this BLSTM layer, below is the propsed replacement
-        # ORIGINAL: self.blstm = nn.LSTM(input_size=nfft, hidden_size=hidden_cells, num_layers=num_layer, batch_first=True,
-        #                      dropout=dropout, bidirectional=bidirectional)
+        self.blstm = nn.LSTM(input_size=nfft, hidden_size=hidden_channels, num_layers=num_layers, batch_first=True,
+                              dropout=dropout, bidirectional=bidirectional)
         self.dprnn = Dual_Path_RNN(nfft, hidden_channels,
                                    rnn_type, norm, dropout, bidirectional=True, num_layers=num_layers, K=K,
                                    num_spks=num_spks)
@@ -63,28 +63,30 @@ class DPCL_DPRNN(nn.Module):
                   for train: B x TF x D
                   for test: TF x D
         '''
-        print("x.shape before not is_train ", x.shape)
+        #print("x.shape before not is_train ", x.shape)
         # It takes in a 2dim tensor [?, NFFT]
         if not is_train:
             x = torch.unsqueeze(x, 0)
         # B x T x F -> B x T x hidden
-        # x, _ = self.blstm(x)  # ORIGINAL
+        #x, _ = self.blstm(x)  # ORIGINAL
         # Unpack sequence first
-        print("x.shape before is_train ", x.shape)
+        #print("x.shape before is_train ", x.shape)
         if is_train:
             # It gets transformed back to a 3 dim tensor here [B, T, F]
             x, _ = pad_packed_sequence(x, batch_first=True)
-            print("x.shape is_train triggered", x.shape)
+            #print("x.shape is_train triggered", x.shape)
 
         # DPRNN will not output hidden states (x, _ = self.blstm())
-        print("x.shape before self.dprnn ", x.shape)
+        #print("x.shape before self.dprnn ", x.shape)
         x = self.dprnn(x)  # DPRNN takes x and outputs x with same shape
-
+        x = x.permute(0, 2, 1).contiguous()
+        #print("x.shape before blstm ", x.shape)
+        x, _ = self.blstm(x)  # ORIGINAL
         # if is_train:
         #     x, _ = pad_packed_sequence(x, batch_first=True)
 
         x = self.dropout(x)
-        print("x.shape before self.linear ", x.shape)
+        #print("x.shape before self.linear ", x.shape)
         # B x T x hidden -> B x T x FD
         x = self.linear(x)
         x = self.activation(x)
@@ -333,7 +335,7 @@ class Dual_Path_RNN(nn.Module):  # The DPRNN block all together # Has conv tasne
         '''
         # [B, N, L]
         x = self.norm(x)
-        print("x.shape after norm: ", x.shape)
+        #print("x.shape after norm: ", x.shape)
 
         # [B, N, L]
         # The convolutional layers, prelu, relu, etc., is not specified in the DPRNN paper
@@ -344,18 +346,18 @@ class Dual_Path_RNN(nn.Module):  # The DPRNN block all together # Has conv tasne
         # N in DPRNN might be equivalent to nfft in DPCL
         # If so, this reordering would make sense, and the inputsize would be predictable in the DPRNN block
         x = x.permute(0, 2, 1).contiguous()
-        print("x.shape before _Segmentation", x.shape)
+        #print("x.shape before _Segmentation", x.shape)
         x, gap = self._Segmentation(x, self.K)
         # [B, N*spks, K, S]
         # [Batch, ?, Chunk size, ?]
-        print("x.shape after _Segmentation", x.shape)
+        #print("x.shape after _Segmentation", x.shape)
         for i in range(self.num_layers):  # its gonna make 6 instances of a dprnn block
             x = self.dual_rnn[i](x)
         # x = self.prelu(x)
         # x = self.conv2d(x)
         # [B*spks, N, K, S]
         B, N, K, S = x.shape
-        print("x.shape after x = self.dual_rnn[i](x)", x.shape)
+        #print("x.shape after x = self.dual_rnn[i](x)", x.shape)
         # I stopped here 9/16/2023
         # TODO, change how .view() rearranges the tensors to match what it was orginally trying to do
         # It gave me this error so far:
@@ -369,7 +371,7 @@ class Dual_Path_RNN(nn.Module):  # The DPRNN block all together # Has conv tasne
         # x = x.view(B*self.num_spks, N, K, S)
         # [B*spks, N, L]
         x = self._over_add(x, gap)
-        print("x.shape after _over_add", x.shape)
+        #print("x.shape after _over_add", x.shape)
 
         # x = self.output(x)*self.output_gate(x)
         # [spks*B, N, L]
@@ -382,7 +384,7 @@ class Dual_Path_RNN(nn.Module):  # The DPRNN block all together # Has conv tasne
         # x = x.transpose(0, 1)
         # return to original order, DPCL will do B x T x hidden -> B x T x FD, if left untouched it will do B x F x TD
         x = x.permute(0, 1, 2).contiguous()
-        print("x.shape after permute before return", x.shape)
+        #print("x.shape after permute before return", x.shape)
         return x
 
     def _padding(self, input, K):
