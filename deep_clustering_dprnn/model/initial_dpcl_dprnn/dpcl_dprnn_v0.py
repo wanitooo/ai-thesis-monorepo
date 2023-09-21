@@ -26,7 +26,7 @@ class DPCL_DPRNN(nn.Module):
     '''
     # ORIGINAL: def __init__(self, num_layer=2, nfft=129, hidden_cells=600, emb_D=40, dropout=0.0, bidirectional=True, activation="Tanh"):
 
-    def __init__(self, nfft, hidden_channels,
+    def __init__(self, in_channels, hidden_channels,
                  dropout=0.0, bidirectional=True, activation="Tanh",
                  rnn_type="LSTM", norm='ln', num_layers=6,
                  num_spks=2, emb_D=40,
@@ -37,14 +37,14 @@ class DPCL_DPRNN(nn.Module):
         # The goal is to replace this BLSTM layer, below is the propsed replacement
         # ORIGINAL: self.blstm = nn.LSTM(input_size=nfft, hidden_size=hidden_cells, num_layers=num_layer, batch_first=True,
         #                      dropout=dropout, bidirectional=bidirectional)
-        self.dprnn = Dual_Path_RNN(nfft, hidden_channels,
+        self.dprnn = Dual_Path_RNN(in_channels, hidden_channels,
                                    rnn_type, norm, dropout, bidirectional=True, num_layers=num_layers, K=K,
                                    num_spks=num_spks)
 
         self.dropout = nn.Dropout(dropout)
         self.activation = getattr(torch.nn, activation)()
         self.linear = nn.Linear(
-            2*hidden_channels if bidirectional else hidden_channels, nfft * emb_D)
+            2*hidden_channels if bidirectional else hidden_channels, in_channels * emb_D)
         self.D = emb_D
 
     # It seems na iba yung shape na ginagamit ng original DPCL compared sa expected shape ng DPRNN
@@ -63,28 +63,28 @@ class DPCL_DPRNN(nn.Module):
                   for train: B x TF x D
                   for test: TF x D
         '''
-        print("x.shape before not is_train ", x.shape)
+        print("x.shape before not is_train ", x.data.size())
         # It takes in a 2dim tensor [?, NFFT]
         if not is_train:
             x = torch.unsqueeze(x, 0)
         # B x T x F -> B x T x hidden
         # x, _ = self.blstm(x)  # ORIGINAL
         # Unpack sequence first
-        print("x.shape before is_train ", x.shape)
+        print("x.shape before is_train ", x.data.size())
+
+        # DPRNN will not output hidden states (x, _ = self.blstm())
+        print("x.shape before self.dprnn ", x.data.size())
+        x = self.dprnn(x)  # DPRNN takes x and outputs x with same shape
+
         if is_train:
             # It gets transformed back to a 3 dim tensor here [B, T, F]
             x, _ = pad_packed_sequence(x, batch_first=True)
-            print("x.shape is_train triggered", x.shape)
-
-        # DPRNN will not output hidden states (x, _ = self.blstm())
-        print("x.shape before self.dprnn ", x.shape)
-        x = self.dprnn(x)  # DPRNN takes x and outputs x with same shape
-
+            print("x.shape is_train triggered", x.data.size())
         # if is_train:
         #     x, _ = pad_packed_sequence(x, batch_first=True)
 
         x = self.dropout(x)
-        print("x.shape before self.linear ", x.shape)
+        print("x.shape before self.linear ", x.data.size())
         # B x T x hidden -> B x T x FD
         x = self.linear(x)
         x = self.activation(x)
@@ -136,14 +136,14 @@ class GlobalLayerNorm(nn.Module):
         # N x 1 x 1
         # cln: mean,var N x 1 x K x S
         # gln: mean,var N x 1 x 1
-        if x.dim == 4:
+        if x.data.dim() == 4:
             mean = torch.mean(x, (1, 2, 3), keepdim=True)
             var = torch.mean((x-mean)**2, (1, 2, 3), keepdim=True)
             if self.elementwise_affine:
                 x = self.weight*(x-mean)/torch.sqrt(var+self.eps)+self.bias
             else:
                 x = (x-mean)/torch.sqrt(var+self.eps)
-        if x.dim == 3:
+        if x.data.dim() == 3:
             mean = torch.mean(x, (1, 2), keepdim=True)
             var = torch.mean((x-mean)**2, (1, 2), keepdim=True)
             if self.elementwise_affine:
@@ -167,13 +167,13 @@ class CumulativeLayerNorm(nn.LayerNorm):
     def forward(self, x):
         # x: N x C x K x S or N x C x L
         # N x K x S x C
-        if x.dim() == 4:
+        if x.data.dim() == 4:
             x = x.permute(0, 2, 3, 1).contiguous()
             # N x K x S x C == only channel norm
             x = super().forward(x)
             # N x C x K x S
             x = x.permute(0, 3, 1, 2).contiguous()
-        if x.dim() == 3:
+        if x.data.dim() == 3:
             x = torch.transpose(x, 1, 2)
             # N x L x C == only channel norm
             x = super().forward(x)
@@ -209,24 +209,24 @@ class Dual_RNN_Block(nn.Module):  # Corresponds to only B) # This block is stand
     # Out channels refer to the out channels by the CONV layers
     # the  first argument in nn.LSTM is the input size, which is equivalent to nfft in the original DPCL
 
-    def __init__(self, nfft,
+    def __init__(self, in_channels,
                  hiddden_cells, rnn_type='LSTM', norm='gln',
                  dropout=0, bidirectional=False, num_spks=2):
         super(Dual_RNN_Block, self).__init__()
         # RNN model
         # getattr() gets nn.<RNN_TYPE> and then intializes it with the args, so its like nn.BLSTM(*args, **kwargs)
         self.intra_rnn = getattr(nn, rnn_type)(
-            nfft, hiddden_cells, 1, batch_first=True, dropout=dropout, bidirectional=bidirectional)
+            input_size=in_channels, hidden_size=hiddden_cells, num_layers=1, batch_first=True, dropout=dropout, bidirectional=bidirectional)
         self.inter_rnn = getattr(nn, rnn_type)(
-            nfft, hiddden_cells, 1, batch_first=True, dropout=dropout, bidirectional=bidirectional)
+            input_size=in_channels, hidden_size=hiddden_cells, num_layers=1, batch_first=True, dropout=dropout, bidirectional=bidirectional)
         # Norm
-        self.intra_norm = select_norm(norm, nfft, 4)  # in the
-        self.inter_norm = select_norm(norm, nfft, 4)  # in the
+        self.intra_norm = select_norm(norm, in_channels, 4)  # in the
+        self.inter_norm = select_norm(norm, in_channels, 4)  # in the
         # Linear
         self.intra_linear = nn.Linear(
-            hiddden_cells*2 if bidirectional else hiddden_cells, nfft)
+            hiddden_cells*2 if bidirectional else hiddden_cells, in_channels)
         self.inter_linear = nn.Linear(
-            hiddden_cells*2 if bidirectional else hiddden_cells, nfft)
+            hiddden_cells*2 if bidirectional else hiddden_cells, in_channels)
 
     def forward(self, x):
         '''
@@ -274,6 +274,7 @@ class Dual_RNN_Block(nn.Module):  # Corresponds to only B) # This block is stand
         # [B, N, K, S]
         # intra_rnn (tensor) is the "original" input that was fed to the inter rnn (layers)
         out = inter_rnn + intra_rnn
+        print("out.shape after out = inter_rnn + intra_rnn: ", out.shape)
 
         return out
 
@@ -295,21 +296,21 @@ class Dual_Path_RNN(nn.Module):  # The DPRNN block all together # Has conv tasne
             num_spks: the number of speakers
     '''
 
-    def __init__(self, nfft, hidden_channels,
+    def __init__(self, in_channels, hidden_channels,
                  rnn_type='LSTM', norm='ln', dropout=0,
                  bidirectional=False, num_layers=4, K=200, num_spks=2):
         super(Dual_Path_RNN, self).__init__()
         self.K = K
         self.num_spks = num_spks
         self.num_layers = num_layers
-        self.norm = select_norm(norm, nfft, 3)
+        self.norm = select_norm(norm, in_channels, 3)
         # self.conv1d = nn.Conv1d(in_channels, out_channels, 1, bias=False)
 
         self.dual_rnn = nn.ModuleList([])
         for i in range(num_layers):
             print("hidden_channels", hidden_channels,
-                  "nfft", nfft, "layer: ", i)
-            self.dual_rnn.append(Dual_RNN_Block(nfft, hidden_channels,
+                  "nfft", in_channels, "layer: ", i)
+            self.dual_rnn.append(Dual_RNN_Block(in_channels, hidden_channels,
                                                 rnn_type=rnn_type, norm=norm, dropout=dropout,
                                                 bidirectional=bidirectional,))
 
@@ -331,10 +332,13 @@ class Dual_Path_RNN(nn.Module):  # The DPRNN block all together # Has conv tasne
            x: [B, N, L]
 
         '''
-        # [B, N, L]
+        # Current [BT, F]
         x = self.norm(x)
-        print("x.shape after norm: ", x.shape)
+        print("x.shape after norm: ", x.data.shape)
 
+        # transform into [B, T(L), F(N)]
+        x, _ = pad_packed_sequence(x, batch_first=True)
+        print("x.shape after pad_packed_sequence: ", x.shape)
         # [B, N, L]
         # The convolutional layers, prelu, relu, etc., is not specified in the DPRNN paper
         # x = self.conv1d(x)
@@ -343,7 +347,8 @@ class Dual_Path_RNN(nn.Module):  # The DPRNN block all together # Has conv tasne
         # [B, N, K, S]
         # N in DPRNN might be equivalent to nfft in DPCL
         # If so, this reordering would make sense, and the inputsize would be predictable in the DPRNN block
-        x = x.permute(0, 2, 1).contiguous()
+        # transform into [B, N(F), L(T)]
+        x = x.data.permute(0, 2, 1).contiguous()
         print("x.shape before _Segmentation", x.shape)
         x, gap = self._Segmentation(x, self.K)
         # [B, N*spks, K, S]
@@ -382,7 +387,8 @@ class Dual_Path_RNN(nn.Module):  # The DPRNN block all together # Has conv tasne
         # x = x.transpose(0, 1)
         # return to original order, DPCL will do B x T x hidden -> B x T x FD, if left untouched it will do B x F x TD
         x = x.permute(0, 1, 2).contiguous()
-        print("x.shape after permute before return", x.shape)
+        x = pack_sequence(x)
+        print("x.shape after permute before return", x.data.shape)
         return x
 
     def _padding(self, input, K):

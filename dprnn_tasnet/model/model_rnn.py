@@ -172,7 +172,6 @@ class Dual_RNN_Block(nn.Module):
                  hidden_channels, rnn_type='LSTM', norm='ln',
                  dropout=0, bidirectional=False, num_spks=2):
         super(Dual_RNN_Block, self).__init__()
-        # RNN model
         self.intra_rnn = getattr(nn, rnn_type)(
             out_channels, hidden_channels, 1, batch_first=True, dropout=dropout, bidirectional=bidirectional)
         self.inter_rnn = getattr(nn, rnn_type)(
