@@ -45,6 +45,8 @@ class DPCL_DPRNN(nn.Module):
         self.activation = getattr(torch.nn, activation)()
         self.linear = nn.Linear(
             2*hidden_channels if bidirectional else hidden_channels, in_channels * emb_D)
+        self.linear_2_hidden = nn.Linear(
+            in_channels, 2*hidden_channels if bidirectional else hidden_channels)
         self.D = emb_D
 
     # It seems na iba yung shape na ginagamit ng original DPCL compared sa expected shape ng DPRNN
@@ -73,6 +75,10 @@ class DPCL_DPRNN(nn.Module):
         print("x.shape before is_train ", x.data.size())
 
         # DPRNN will not output hidden states (x, _ = self.blstm())
+        x, _ = pad_packed_sequence(x, batch_first=True)
+        # Converts input from 129 to hidden_cells * 2
+        x = self.linear_2_hidden(x)
+        x = pack_sequence(x)
         print("x.shape before self.dprnn ", x.data.size())
         x = self.dprnn(x)  # DPRNN takes x and outputs x with same shape
 
@@ -84,6 +90,7 @@ class DPCL_DPRNN(nn.Module):
         #     x, _ = pad_packed_sequence(x, batch_first=True)
 
         x = self.dropout(x)
+        x = x.permute(0, 2, 1)
         print("x.shape before self.linear ", x.data.size())
         # B x T x hidden -> B x T x FD
         x = self.linear(x)
@@ -216,17 +223,19 @@ class Dual_RNN_Block(nn.Module):  # Corresponds to only B) # This block is stand
         # RNN model
         # getattr() gets nn.<RNN_TYPE> and then intializes it with the args, so its like nn.BLSTM(*args, **kwargs)
         self.intra_rnn = getattr(nn, rnn_type)(
-            input_size=in_channels, hidden_size=hiddden_cells, num_layers=1, batch_first=True, dropout=dropout, bidirectional=bidirectional)
+            input_size=hiddden_cells*2 if bidirectional else hiddden_cells, hidden_size=hiddden_cells, num_layers=1, batch_first=True, dropout=dropout, bidirectional=bidirectional)
         self.inter_rnn = getattr(nn, rnn_type)(
-            input_size=in_channels, hidden_size=hiddden_cells, num_layers=1, batch_first=True, dropout=dropout, bidirectional=bidirectional)
+            input_size=hiddden_cells*2 if bidirectional else hiddden_cells, hidden_size=hiddden_cells, num_layers=1, batch_first=True, dropout=dropout, bidirectional=bidirectional)
         # Norm
-        self.intra_norm = select_norm(norm, in_channels, 4)  # in the
-        self.inter_norm = select_norm(norm, in_channels, 4)  # in the
+        self.intra_norm = select_norm(
+            norm, hiddden_cells*2 if bidirectional else hiddden_cells, 4)  # in the
+        self.inter_norm = select_norm(
+            norm, hiddden_cells*2 if bidirectional else hiddden_cells, 4)  # in the
         # Linear
         self.intra_linear = nn.Linear(
-            hiddden_cells*2 if bidirectional else hiddden_cells, in_channels)
+            hiddden_cells*2 if bidirectional else hiddden_cells,  hiddden_cells*2 if bidirectional else hiddden_cells)
         self.inter_linear = nn.Linear(
-            hiddden_cells*2 if bidirectional else hiddden_cells, in_channels)
+            hiddden_cells*2 if bidirectional else hiddden_cells,  hiddden_cells*2 if bidirectional else hiddden_cells)
 
     def forward(self, x):
         '''
@@ -244,28 +253,42 @@ class Dual_RNN_Block(nn.Module):  # Corresponds to only B) # This block is stand
         intra_rnn = x.permute(0, 3, 2, 1).contiguous().view(B*S, K, N)
         # [BS, K, H]
         # Gets the type of rnn then feeds the data
+        print("intra_rnn.shape before intra rnn: ", intra_rnn.shape)
         intra_rnn, _ = self.intra_rnn(intra_rnn)
+        print("intra_rnn.shape after intra rnn: ", intra_rnn.shape)
         # [BS, K, N]
         intra_rnn = self.intra_linear(
             intra_rnn.contiguous().view(B*S*K, -1)).view(B*S, K, -1)
+        print("intra_rnn.shape after intra_linear: ", intra_rnn.shape)
+
         # [B, S, K, N]
-        intra_rnn = intra_rnn.view(B, S, K, N)
+        intra_rnn = intra_rnn.view(B, S, K, -1)  # Infer the correct size N
+        print("intra_rnn.shape after intra_rnn.view: ", intra_rnn.shape)
+
         # [B, N, K, S]
         intra_rnn = intra_rnn.permute(0, 3, 2, 1).contiguous()
+        print("intra_rnn.shape before intra_norm: ", intra_rnn.shape)
         intra_rnn = self.intra_norm(intra_rnn)
 
         # [B, N, K, S]
-        intra_rnn = intra_rnn + x  # adds the processed input back to the original input
+        print("intra_rnn.shape after intra_norm: ", intra_rnn.shape)
+        # adds the processed input back to the original input
+        intra_rnn = intra_rnn + x
 
         # inter RNN
         # [BK, S, N] # Prepares shape, note 2 and 3 are exchanged this time?
         inter_rnn = intra_rnn.permute(0, 2, 3, 1).contiguous().view(B*K, S, N)
         # [BK, S, H]
         # Gets the type of rnn then feeds the data
+        print("inter_rnn.shape before inter rnn: ", inter_rnn.shape)
         inter_rnn, _ = self.inter_rnn(inter_rnn)
+        print("inter_rnn.shape after inter rnn: ", inter_rnn.shape)
+
         # [BK, S, N]
         inter_rnn = self.inter_linear(
             inter_rnn.contiguous().view(B*S*K, -1)).view(B*K, S, -1)
+        print("inter_rnn.shape after inter_rnn : ", inter_rnn.shape)
+
         # [B, K, S, N]
         inter_rnn = inter_rnn.view(B, K, S, N)
         # [B, N, K, S]

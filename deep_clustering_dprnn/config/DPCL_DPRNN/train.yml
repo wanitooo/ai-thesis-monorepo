@@ -46,7 +46,7 @@ DPCL:
   dropout: 0
   bidirectional: true
   num_layers: 2 # change to something lower
-  K: 10 # changed from 250
+  K: 10 # changed from 250, chunk size
   num_spks: 2
 
   
