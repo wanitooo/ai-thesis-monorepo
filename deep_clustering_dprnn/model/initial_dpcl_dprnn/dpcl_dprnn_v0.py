@@ -65,37 +65,37 @@ class DPCL_DPRNN(nn.Module):
                   for train: B x TF x D
                   for test: TF x D
         '''
-        print("x.shape before not is_train ", x.data.size())
+        #print("x.shape before not is_train ", x.data.size())
         # It takes in a 2dim tensor [?, NFFT]
         if not is_train:
             x = torch.unsqueeze(x, 0)
         # B x T x F -> B x T x hidden
         # x, _ = self.blstm(x)  # ORIGINAL
         # Unpack sequence first
-        print("x.shape before is_train ", x.data.size())
+        #print("x.shape before is_train ", x.data.size())
 
         # DPRNN will not output hidden states (x, _ = self.blstm())
         x, _ = pad_packed_sequence(x, batch_first=True)
         # Converts input from 129 to hidden_cells * 2
         x = self.linear_2_hidden(x)
         x = pack_sequence(x)
-        print("x.shape before self.dprnn ", x.data.size())
+        #print("x.shape before self.dprnn ", x.data.size())
         x = self.dprnn(x)  # DPRNN takes x and outputs x with same shape
 
         if is_train:
             # It gets transformed back to a 3 dim tensor here [B, T, F]
             x, _ = pad_packed_sequence(x, batch_first=True)
-            print("x.shape is_train triggered", x.data.size())
+            #print("x.shape is_train triggered", x.data.size())
         # if is_train:
         #     x, _ = pad_packed_sequence(x, batch_first=True)
 
         x = self.dropout(x)
         x = x.permute(0, 2, 1)
-        print("x.shape before self.linear ", x.data.size())
+        #print("x.shape before self.linear ", x.data.size())
         # B x T x hidden -> B x T x FD
         x = self.linear(x)
         x = self.activation(x)
-        print("x.shape after self.activation ", x.data.size())
+        #print("x.shape after self.activation ", x.data.size())
         B = x.shape[0]
         if is_train:
             # B x TF x D
@@ -253,25 +253,25 @@ class Dual_RNN_Block(nn.Module):  # Corresponds to only B) # This block is stand
         intra_rnn = x.permute(0, 3, 2, 1).contiguous().view(B*S, K, N)
         # [BS, K, H]
         # Gets the type of rnn then feeds the data
-        print("intra_rnn.shape before intra rnn: ", intra_rnn.shape)
+        #print("intra_rnn.shape before intra rnn: ", intra_rnn.shape)
         intra_rnn, _ = self.intra_rnn(intra_rnn)
-        print("intra_rnn.shape after intra rnn: ", intra_rnn.shape)
+        #print("intra_rnn.shape after intra rnn: ", intra_rnn.shape)
         # [BS, K, N]
         intra_rnn = self.intra_linear(
             intra_rnn.contiguous().view(B*S*K, -1)).view(B*S, K, -1)
-        print("intra_rnn.shape after intra_linear: ", intra_rnn.shape)
+        #print("intra_rnn.shape after intra_linear: ", intra_rnn.shape)
 
         # [B, S, K, N]
         intra_rnn = intra_rnn.view(B, S, K, -1)  # Infer the correct size N
-        print("intra_rnn.shape after intra_rnn.view: ", intra_rnn.shape)
+        #print("intra_rnn.shape after intra_rnn.view: ", intra_rnn.shape)
 
         # [B, N, K, S]
         intra_rnn = intra_rnn.permute(0, 3, 2, 1).contiguous()
-        print("intra_rnn.shape before intra_norm: ", intra_rnn.shape)
+        #print("intra_rnn.shape before intra_norm: ", intra_rnn.shape)
         intra_rnn = self.intra_norm(intra_rnn)
 
         # [B, N, K, S]
-        print("intra_rnn.shape after intra_norm: ", intra_rnn.shape)
+        #print("intra_rnn.shape after intra_norm: ", intra_rnn.shape)
         # adds the processed input back to the original input
         intra_rnn = intra_rnn + x
 
@@ -280,14 +280,14 @@ class Dual_RNN_Block(nn.Module):  # Corresponds to only B) # This block is stand
         inter_rnn = intra_rnn.permute(0, 2, 3, 1).contiguous().view(B*K, S, N)
         # [BK, S, H]
         # Gets the type of rnn then feeds the data
-        print("inter_rnn.shape before inter rnn: ", inter_rnn.shape)
+        #print("inter_rnn.shape before inter rnn: ", inter_rnn.shape)
         inter_rnn, _ = self.inter_rnn(inter_rnn)
-        print("inter_rnn.shape after inter rnn: ", inter_rnn.shape)
+        #print("inter_rnn.shape after inter rnn: ", inter_rnn.shape)
 
         # [BK, S, N]
         inter_rnn = self.inter_linear(
             inter_rnn.contiguous().view(B*S*K, -1)).view(B*K, S, -1)
-        print("inter_rnn.shape after inter_rnn : ", inter_rnn.shape)
+        #print("inter_rnn.shape after inter_rnn : ", inter_rnn.shape)
 
         # [B, K, S, N]
         inter_rnn = inter_rnn.view(B, K, S, N)
@@ -297,7 +297,7 @@ class Dual_RNN_Block(nn.Module):  # Corresponds to only B) # This block is stand
         # [B, N, K, S]
         # intra_rnn (tensor) is the "original" input that was fed to the inter rnn (layers)
         out = inter_rnn + intra_rnn
-        print("out.shape after out = inter_rnn + intra_rnn: ", out.shape)
+        #print("out.shape after out = inter_rnn + intra_rnn: ", out.shape)
 
         return out
 
@@ -331,8 +331,8 @@ class Dual_Path_RNN(nn.Module):  # The DPRNN block all together # Has conv tasne
 
         self.dual_rnn = nn.ModuleList([])
         for i in range(num_layers):
-            print("hidden_channels", hidden_channels,
-                  "nfft", in_channels, "layer: ", i)
+            #print("hidden_channels", hidden_channels,
+            #      "nfft", in_channels, "layer: ", i)
             self.dual_rnn.append(Dual_RNN_Block(in_channels, hidden_channels,
                                                 rnn_type=rnn_type, norm=norm, dropout=dropout,
                                                 bidirectional=bidirectional,))
@@ -357,11 +357,11 @@ class Dual_Path_RNN(nn.Module):  # The DPRNN block all together # Has conv tasne
         '''
         # Current [BT, F]
         x = self.norm(x)
-        print("x.shape after norm: ", x.data.shape)
+        #print("x.shape after norm: ", x.data.shape)
 
         # transform into [B, T(L), F(N)]
         x, _ = pad_packed_sequence(x, batch_first=True)
-        print("x.shape after pad_packed_sequence: ", x.shape)
+        #print("x.shape after pad_packed_sequence: ", x.shape)
         # [B, N, L]
         # The convolutional layers, prelu, relu, etc., is not specified in the DPRNN paper
         # x = self.conv1d(x)
@@ -372,18 +372,18 @@ class Dual_Path_RNN(nn.Module):  # The DPRNN block all together # Has conv tasne
         # If so, this reordering would make sense, and the inputsize would be predictable in the DPRNN block
         # transform into [B, N(F), L(T)]
         x = x.data.permute(0, 2, 1).contiguous()
-        print("x.shape before _Segmentation", x.shape)
+        #print("x.shape before _Segmentation", x.shape)
         x, gap = self._Segmentation(x, self.K)
         # [B, N*spks, K, S]
         # [Batch, ?, Chunk size, ?]
-        print("x.shape after _Segmentation", x.shape)
+        #print("x.shape after _Segmentation", x.shape)
         for i in range(self.num_layers):  # its gonna make 6 instances of a dprnn block
             x = self.dual_rnn[i](x)
         # x = self.prelu(x)
         # x = self.conv2d(x)
         # [B*spks, N, K, S]
         B, N, K, S = x.shape
-        print("x.shape after x = self.dual_rnn[i](x)", x.shape)
+        #print("x.shape after x = self.dual_rnn[i](x)", x.shape)
         # I stopped here 9/16/2023
         # TODO, change how .view() rearranges the tensors to match what it was orginally trying to do
         # It gave me this error so far:
@@ -397,7 +397,7 @@ class Dual_Path_RNN(nn.Module):  # The DPRNN block all together # Has conv tasne
         # x = x.view(B*self.num_spks, N, K, S)
         # [B*spks, N, L]
         x = self._over_add(x, gap)
-        print("x.shape after _over_add", x.shape)
+        #print("x.shape after _over_add", x.shape)
 
         # x = self.output(x)*self.output_gate(x)
         # [spks*B, N, L]
@@ -411,7 +411,7 @@ class Dual_Path_RNN(nn.Module):  # The DPRNN block all together # Has conv tasne
         # return to original order, DPCL will do B x T x hidden -> B x T x FD, if left untouched it will do B x F x TD
         x = x.permute(0, 1, 2).contiguous()
         x = pack_sequence(x)
-        print("x.shape after permute before return", x.data.shape)
+        #print("x.shape after permute before return", x.data.shape)
         return x
 
     def _padding(self, input, K):

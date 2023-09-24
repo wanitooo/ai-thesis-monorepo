@@ -69,7 +69,7 @@ train:
   epoch: 100
   early_stop: 10
   path: ./checkpoint
-  is_gpu: false # change to true if GPU / CUDA is available
+  is_gpu: true # change to true if GPU / CUDA is available
 
 #### Optimizer settings
 optim:
