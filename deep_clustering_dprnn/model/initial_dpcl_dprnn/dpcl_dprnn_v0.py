@@ -95,7 +95,7 @@ class DPCL_DPRNN(nn.Module):
         # B x T x hidden -> B x T x FD
         x = self.linear(x)
         x = self.activation(x)
-
+        print("x.shape after self.activation ", x.data.size())
         B = x.shape[0]
         if is_train:
             # B x TF x D
@@ -366,7 +366,7 @@ class Dual_Path_RNN(nn.Module):  # The DPRNN block all together # Has conv tasne
         # The convolutional layers, prelu, relu, etc., is not specified in the DPRNN paper
         # x = self.conv1d(x)
         # print("AFTER CONV1D")
-
+        # TODO ADD SELF.LINEAR TO 600 HERE
         # [B, N, K, S]
         # N in DPRNN might be equivalent to nfft in DPCL
         # If so, this reordering would make sense, and the inputsize would be predictable in the DPRNN block
