@@ -45,8 +45,7 @@ class DPCL_DPRNN(nn.Module):
         self.activation = getattr(torch.nn, activation)()
         self.linear = nn.Linear(
             2*hidden_channels if bidirectional else hidden_channels, in_channels * emb_D)
-        self.linear_2_hidden = nn.Linear(
-            in_channels, 2*hidden_channels if bidirectional else hidden_channels)
+
         self.D = emb_D
 
     # It seems na iba yung shape na ginagamit ng original DPCL compared sa expected shape ng DPRNN
@@ -75,10 +74,6 @@ class DPCL_DPRNN(nn.Module):
         print("x.shape before is_train ", x.data.size())
 
         # DPRNN will not output hidden states (x, _ = self.blstm())
-        x, _ = pad_packed_sequence(x, batch_first=True)
-        # Converts input from 129 to hidden_cells * 2
-        x = self.linear_2_hidden(x)
-        x = pack_sequence(x)
         print("x.shape before self.dprnn ", x.data.size())
         x = self.dprnn(x)  # DPRNN takes x and outputs x with same shape
 
@@ -327,6 +322,8 @@ class Dual_Path_RNN(nn.Module):  # The DPRNN block all together # Has conv tasne
         self.num_spks = num_spks
         self.num_layers = num_layers
         self.norm = select_norm(norm, in_channels, 3)
+        self.linear_2_hidden = nn.Linear(
+            in_channels, 2*hidden_channels if bidirectional else hidden_channels)
         # self.conv1d = nn.Conv1d(in_channels, out_channels, 1, bias=False)
 
         self.dual_rnn = nn.ModuleList([])
@@ -367,6 +364,7 @@ class Dual_Path_RNN(nn.Module):  # The DPRNN block all together # Has conv tasne
         # x = self.conv1d(x)
         # print("AFTER CONV1D")
         # TODO ADD SELF.LINEAR TO 600 HERE
+        x = self.linear_2_hidden(x)
         # [B, N, K, S]
         # N in DPRNN might be equivalent to nfft in DPCL
         # If so, this reordering would make sense, and the inputsize would be predictable in the DPRNN block
