@@ -26,7 +26,7 @@ from django.http import response
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from aiquire.ai import *
+from ai.ai import *
 import time  # for benchmarking purposes
 
 # Create your views here.
@@ -43,6 +43,15 @@ class DrnnSeparate(APIView):
     """
     Gets the separated audio of two given audio using Deep Clustering with DRNN.
     """
+    # TODO: Since the point is to have them be accessible from a frontend, we have challenges:
+    # Processing audio files in JSON 
+    # returning audiofiles in JSON.
+    # Possible solutions:
+    # Sending and returning audio file paths, could be local -> prioritize local.
+    def post(self, request):
+        results = DRNNModel.get_separated_audio(request.data['data'])
+        return Response({"audio1": results, "audio2": results})
+    
 class DPrnnSeparate(APIView):
     """
     Gets the separated audio of two given audio using Deep Clustering with DPRNN.
