@@ -1,0 +1,66 @@
+#### general settings
+name: DPCL_optim
+use_tb_logger: true
+num_spks: 2
+#### datasets
+cmvn_file: ../cmvn.ark
+gpu: true
+audio_setting:
+  window: hann
+  nfft: 256
+  window_length: 256
+  hop_length: 64
+  center: true
+  is_mag: false # abs(tf-domain)
+  is_log: false # log(tf-domain)
+
+#### network structures
+#DPCL:
+#  num_layers: 2
+#  nfft: 129  # nfft/2+1
+#  hidden_cells: 600
+#  emb_D: 40
+#  dropout: 0
+#  bidirectional: true
+#  activation: Tanh
+
+DPCL:
+  # num_layer: 4 # 6 IN DPRNN
+  # nfft: 129 # nfft/2+1
+  in_channels: 129 # nfft/2+1
+  hidden_channels: 600 # changed from hidden_cells
+  emb_D: 20
+  dropout: 0
+  bidirectional: true
+  activation: Tanh
+  # in_channels: 256
+  # out_channels: 64
+  # hidden_channels: 128
+  # kernel_size: 2
+  rnn_type: LSTM
+  norm: gln # changed from ln
+  dropout: 0
+  bidirectional: true
+  num_layers: 1 # change to something lower
+  K: 5 # changed from 250, chunk size
+  num_spks: 2
+
+#### training settings: learning rate scheme, loss
+train:
+  epoch: 100
+  early_stop: 10
+  path: ./checkpoint
+  is_gpu: false # change to true if GPU / CUDA is available
+
+#### Resume training settings
+resume:
+  state: false
+  path: ./checkpoint
+
+#### logger
+logger:
+  name: DPCL
+  path: ./checkpoint
+  screen: true
+  tofile: false
+  print_freq: 100

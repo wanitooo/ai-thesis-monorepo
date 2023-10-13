@@ -5,12 +5,12 @@ sys.path.append('./*')
 import torch
 from config.option import parse
 from sklearn.cluster import KMeans
-from deep_clustering_dprnn.data_loader import AudioData
+from data_loader import AudioData
 import numpy as np
 from utils import util
 from config import option
 import argparse
-from model import model
+from model import initial_dpcl_dprnn
 from utils.stft_istft import STFT
 import os
 import librosa
@@ -44,7 +44,7 @@ class Separation(object):
                 'cuda' if torch.cuda.is_available() else 'cpu')
             self.dpcl = dpcl
         self.dpcl = dpcl
-        ckp = torch.load('./checkpoint/DPCL_optim_jusper/best.pt',
+        ckp = torch.load('./checkpoint/DPCL_optim/best.pt',
                          map_location=self.device)
         self.dpcl.load_state_dict(ckp['model_state_dict'])
         self.dpcl.eval()
@@ -122,7 +122,7 @@ if __name__ == "__main__":
                         help='Path to save file.')
     args = parser.parse_args()
     opt = option.parse(args.opt)
-    dpcl = model.DPCL(**opt['DPCL'])
+    dpcl = initial_dpcl_dprnn.DPCL_DPRNN(**opt['DPCL'])
 
     separation = Separation(dpcl, args.scp, opt, args.save_file)
     separation.run()

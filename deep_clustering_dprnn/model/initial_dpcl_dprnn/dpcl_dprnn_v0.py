@@ -74,7 +74,7 @@ class DPCL_DPRNN(nn.Module):
         #print("x.shape before is_train ", x.data.size())
 
         # DPRNN will not output hidden states (x, _ = self.blstm())
-        print("x.shape before self.dprnn ", x.data.size())
+        #print("x.shape before self.dprnn ", x.data.size())
         x = self.dprnn(x)  # DPRNN takes x and outputs x with same shape
 
         if is_train:
