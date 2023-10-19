@@ -44,10 +44,11 @@ class Separation(object):
                 'cuda' if torch.cuda.is_available() else 'cpu')
             self.dpcl = dpcl
         self.dpcl = dpcl
-        ckp = torch.load('./checkpoint/DPCL_optim/best.pt',
+        ckp = torch.load('./checkpoint/dpcl_dprnn_1/best.pt',
                          map_location=self.device)
         self.dpcl.load_state_dict(ckp['model_state_dict'])
         self.dpcl.eval()
+        # print("OPT", opt)
         self.waves = AudioData(scp_file, **opt['audio_setting'])
         self.keys = AudioData(scp_file, **opt['audio_setting']).wave_keys
         self.kmeans = KMeans(n_clusters=opt['num_spks'])

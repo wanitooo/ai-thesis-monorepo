@@ -3,6 +3,7 @@
 Scaffold for architecting / building the model. The added code are for reference/editing later. Attempts at making the DPCL-DPRNN model are at model/initial_dpcl_dprnn.
 
 - 9/16/2023: The scripts are now runnable, the model is not yet trainable, fixed mismatches until overlap add
+- 10/19/2023: Both train.py and test.py should be working as seen in the code below.
 
 # Instructions
 
@@ -26,10 +27,10 @@ python3 train.py --opt ./config/DPCL_DPRNN/train.yml
 
 ## Testing
 
-- Not tried
+- Confirmed to be working. Can try with GPU flag is turned to true if using with GPU but CPU testing would be fine. It finishes in ~20 mins
 
 ```shell
-python3 test.py -scp tt_mix.scp -opt ./config/DPCL_DPRNN/train.yml -save_file ./result
+python3 test.py -scp tt_mix.scp -opt ./config/DPCL_DPRNN/test.yml -save_file ./result
 ```
 
 # Considerations for building / architecting DP DCPL
@@ -56,8 +57,8 @@ python3 test.py -scp tt_mix.scp -opt ./config/DPCL_DPRNN/train.yml -save_file ./
 
 ### Possible mismatch:
 
-- DPCL expects indexes of the data to be fed in to it [T,F], this is so it could build an embedding “affinity matrix” (K) so it needs to reference which is which
-- DPRNN expect the length of a sequential input [B, N, L] in segmentation, this is because it wants to chunk the inputs into blocks first
+- ~~DPCL expects indexes of the data to be fed in to it [T,F], this is so it could build an embedding “affinity matrix” (K) so it needs to reference which is which~~
+- ~~DPRNN expect the length of a sequential input [B, N, L] in segmentation, this is because it wants to chunk the inputs into blocks first~~
 
 # Resources
 
