@@ -1,0 +1,51 @@
+//q-input
+.custom-file-input {
+  width: 200px;
+
+  //Hides native design
+  input[type="file"] {
+    visibility: hidden;
+  }
+}
+
+//Upload Button
+.custom-upload-btn {
+  width: 300px;
+  .q-field__native {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+//Media Player
+.custom-player {
+  --mediaplayer-background: #e0e0e0;
+  --mediaplayer-background-dark: #e0e0e0;
+  --mediaplayer-color: #525252;
+  --mediaplayer-color-dark: #525252;
+
+  flex: 1;
+
+  .q-slider__track,
+  .q-slider__thumb {
+    color: #777777;
+  }
+
+  //Hides error hint
+  .q-media__error-window {
+    display: none;
+  }
+}
+
+//Mixed Media Player Box
+.mixed-player-box {
+  border: 1px solid #808080;
+  width: 100%;
+}
+
+//Separate Button
+.separate-btn {
+  background: #bbbbbb;
+  color: black;
+}
