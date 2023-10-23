@@ -55,7 +55,7 @@ python3 train.py --opt ./config/train.yml
 1. Use the following command to start testing the model
 
 ```shell
-python3 test.py -scp 1.scp -opt ./option/train.yml -save_file ./result
+python3 test.py -scp tt_mix.scp -opt ./config/train.yml -save_file ./result
 ```
 
 2. You can use the [this code](https://github.com/JusperLee/Calculate-SNR-SDR "this code") to calculate the SNR scores.
