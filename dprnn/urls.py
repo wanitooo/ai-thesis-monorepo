@@ -17,16 +17,21 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework import routers
-from dprnn.api import views
+from django.conf.urls.static import static
+from django.conf import settings
+from dprnn.api.views import FileUploadAPIView, DrnnSeparate
+
 router = routers.DefaultRouter()
-router.register(r'users', views.UserViewSet)
-router.register(r'groups', views.GroupViewSet)
-router.register(r'drnn', views.DrnnSeparate)
-router.register(r'dprnn', views.DprnnSeparate)
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('drnn-separate/', include('')),
+    path('upload-file/', FileUploadAPIView.as_view(), name='upload-file'),
+    path('separate/', DrnnSeparate.as_view(), name='separate'),
+
+    # path('drnn-separate/', include('')),
     # path('dprnn-separate/'),
     # path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 ]
+
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

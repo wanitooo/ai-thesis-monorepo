@@ -1,0 +1,54 @@
+## TODO:
+
+- ~~Separate a single mix audio~~
+- ~~Integrate this separation into an HTTP route~~
+- Create route for DPCL DPRNN separation
+- Create a route for WER score
+- Create a route for SI SNR score
+
+# Notes:
+
+- ~~You need to create a file field model that will convert a user uploaded audio file into an audio file path~~
+- ~~https://joel-hanson.medium.com/drf-how-to-make-a-simple-file-upload-api-using-viewsets-1b1e65ed65ca~~
+- ~~https://github.com/Joel-hanson/simple-file-upload~~
+- ~~Feed mixed audio into pretrained model, return filepath to seperated audios~~
+
+## API DOC
+
+POST /separate:
+INPUT
+
+```
+{
+"file": "media/mixed/somefile.wav",
+}
+```
+
+OUTPUT:
+
+```
+{
+"message": "Succesfully separated audio",
+"spk_1": "media/separated/somefile-separated.wav",
+"spk_2": "media/separated/somefile-separated.wav",
+}
+```
+
+POST /upload-file
+
+INPUT
+
+```
+{
+"file": <Multipart form-data of file>,
+}
+```
+
+OUTPUT:
+
+```
+{
+    "file": "/media/mixed/somefile.wav",
+    "uploaded_on": "2023-10-30T09:02:49.959560Z"
+}
+```

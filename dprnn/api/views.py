@@ -1,156 +1,83 @@
-from django.contrib.auth.models import User, Group
-from rest_framework import viewsets
-from rest_framework import permissions
+import time  # for benchmarking purposes
+from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework import status
+from .serializers import AudioUploadSerializer
+from rest_framework.viewsets import ViewSet
 from dprnn.api.serializers import UserSerializer, GroupSerializer
-
-
-class UserViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows users to be viewed or edited.
-    """
-    queryset = User.objects.all().order_by('-date_joined')
-    serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-
-class GroupViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows groups to be viewed or edited.
-    """
-    queryset = Group.objects.all()
-    serializer_class = GroupSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    
-    
+from rest_framework import permissions
+from rest_framework import viewsets
+from django.contrib.auth.models import User, Group
 from django.http import response
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from ai.ai import *
-import time  # for benchmarking purposes
+import sys
+import os
+sys.path.append(os.path.join(sys.path[0], 'dprnn', 'ai'))
+sys.path.append(os.path.join(sys.path[0], 'dprnn', 'utils'))
+# Do not change the order of the sys.path.append, from ai import .... must be below sys.path.append
+# from test import Random
+from ai import DRNNModel, Models, Preprocess
+from dprnn.utils.separate import Separation
 
+
+
+class FileUploadAPIView(APIView):
+    parser_classes = (MultiPartParser, FormParser)
+    serializer_class = AudioUploadSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            # print(serializer.validated_data)
+            # you can access the file like this from serializer
+            # uploaded_file = serializer.validated_data["file"]
+            serializer.save()
+            return Response(
+                serializer.data,
+                status=status.HTTP_201_CREATED
+            )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )  # ViewSets define the view behavior.
+
+
+class UploadViewSet(ViewSet):
+    serializer_class = AudioUploadSerializer
+
+    def list(self, request):
+        return Response("GET API")
+
+    def create(self, request):
+        file_uploaded = request.FILES.get('file_uploaded')
+        if file_uploaded:
+            print(file_uploaded)
+            file_uploaded.save()
+
+        content_type = file_uploaded.content_type
+        response = "POST API and you have uploaded a {} file".format(
+            content_type)
+        return Response(response)
 # Create your views here.
 
 
-def time_convert(sec):
-    mins = sec // 60
-    sec = sec % 60
-    hours = mins // 60
-    mins = mins % 60
-    print("Time Lapsed = {0}:{1}:{2}".format(int(hours), int(mins), sec))
-    
 class DrnnSeparate(APIView):
     """
     Gets the separated audio of two given audio using Deep Clustering with DRNN.
     """
-    # TODO: Since the point is to have them be accessible from a frontend, we have challenges:
-    # Processing audio files in JSON 
-    # returning audiofiles in JSON.
-    # Possible solutions:
-    # Sending and returning audio file paths, could be local -> prioritize local.
     def post(self, request):
-        results = DRNNModel.get_separated_audio(request.data['data'])
-        return Response({"audio1": results, "audio2": results})
-    
+        results = DRNNModel.get_separated_audio(request)
+        
+        # TODO: return audio 1 and audio 2 file path instead
+        if results:
+            return Response({"message": "Separation successful", "spk_1": results['spk_1'], "spk_2": results['spk_2']})
+        return Response({"message": "Something went wrong"})
+
+
 class DPrnnSeparate(APIView):
     """
     Gets the separated audio of two given audio using Deep Clustering with DPRNN.
     """
 
-
-class PredictProbability(APIView):
-    """
-        Gets the prediction probability of a given post/transcript based on the five models.
-    """
-
-    def post(self, request):
-        """
-            Gets the prediction probability of a given post/transcript based on the five models.
-
-            Parameters:
-            -------------
-            string request.data['data']: represents the post/transcript 
-            which will undergo prediction
-
-            Returns:
-            -------------
-            a dictionary containing the different probabilities grouped by model name 
-        """
-        print("TIMING PERSONALITY")
-        start = time.time()
-        results = Models.get_prediction_probability(request.data['data'])
-        agr = {"Critical": results['agr'][0], "Lenient": results['agr'][1]}
-        con = {"Impulsive": results['con'][0], "Precise": results['con'][1]}
-        ext = {"Extrovert": results['ext'][0], "Introvert": results['ext'][1]}
-        neu = {"Even-tempered": results['neu']
-               [0], "Temperamental": results['neu'][1]}
-        opn = {"Conventional": results['opn']
-               [0], "Insightful": results['opn'][1]}
-        time_convert(time.time() - start)
-        return Response({"Openness": opn, "Conscientiousness": con,
-                         "Extraversion": ext, "Agreeableness": agr, "Neuroticism": neu})
-
-
-class PredictPersonality(APIView):
-    """
-        Gets the personality classification of a given post/transcript based on the five models (based on the big 5 personality traits). Follows a binary classification based on the greater tuple value within a model's prediction.
-    """
-
-    def post(self, request):
-        """
-            Gets the personality classification of a given post/transcript based 
-            on the five models (based on the big 5 personality traits). Follows a binary
-            classification based on the greater tuple value within a model's prediction. 
-
-            Parameters:
-            -------------
-            string request.data['data']: represents the post/transcript which will undergo prediction
-
-            Returns:
-            -------------
-            a dictionary containing the big 5 personality classifications 
-        """
-        print("TIMING PERSONALITY")
-        start = time.time()
-        results = Models.get_prediction_probability(request.data['data'])
-        opn_val = "Conventional" if results['opn'][0] > results['opn'][1] else "Insightful"
-        con_val = "Impulsive" if results['con'][0] > results['con'][1] else "Precise"
-        ext_val = "Extrovert" if results['ext'][0] > results['ext'][1] else "Introvert"
-        agr_val = "Critical" if results['agr'][0] > results['agr'][1] else "Lenient"
-        neu_val = "Even-tempered" if results['neu'][0] > results['neu'][1] else "Temperamental"
-        time_convert(time.time() - start)
-        return Response({"Openness": opn_val, "Conscientiousness": con_val,
-                         "Extraversion": ext_val, "Agreeableness": agr_val, "Neuroticism": neu_val})
-
-
-class CleanInput(APIView):
-    """
-        Simulates the cleaning of a post/transcript to prepare it for prediction.
-    """
-
-    def post(self, request):
-        """
-            Simulates the cleaning of a post/transcript to prepare it for prediction.
-
-            Parameters:
-            -------------
-            string request.data['data']: represents the post/transcript which will undergo prediction
-
-            Returns:
-            -------------
-            a cleaned string (lower case, without punctuations) 
-        """
-        print("TIMING CLEANINPUT")
-        start = time.time()
-        results = Preprocess.preprocess(request.data['data'])
-        time_convert(time.time() - start)
-        print(results)
-        return Response(results)
-
-
-class Preload(APIView):
-
-    def get(self, request):
-        Models.preload("Contractions", "Predictors")
-
-        return Response(200)
