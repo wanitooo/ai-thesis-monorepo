@@ -17,8 +17,7 @@ sys.path.append(os.path.join(sys.path[0], 'dprnn', 'ai'))
 sys.path.append(os.path.join(sys.path[0], 'dprnn', 'utils'))
 # Do not change the order of the sys.path.append, from ai import .... must be below sys.path.append
 # from test import Random
-from ai import DRNNModel, Models, Preprocess
-from dprnn.utils.separate import Separation
+from ai import DRNNModel, DPRNNModel
 
 
 
@@ -70,14 +69,18 @@ class DrnnSeparate(APIView):
     def post(self, request):
         results = DRNNModel.get_separated_audio(request)
         
-        # TODO: return audio 1 and audio 2 file path instead
         if results:
             return Response({"message": "Separation successful", "spk_1": results['spk_1'], "spk_2": results['spk_2']})
         return Response({"message": "Something went wrong"})
 
 
-class DPrnnSeparate(APIView):
+class DualRnnSeparate(APIView):
     """
     Gets the separated audio of two given audio using Deep Clustering with DPRNN.
     """
+    def post(self, request):
+        results = DPRNNModel.get_separated_audio(request)
+        if results:
+            return Response({"message": "Separation successful", "spk_1": results['spk_1'], "spk_2": results['spk_2']})
+        return Response({"message": "Something went wrong"})
 
