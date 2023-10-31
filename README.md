@@ -57,7 +57,7 @@ OUTPUT:
 }
 ```
 
-POST /separate:
+POST /drnn-separate and /dprnn-separate :
 NOTE: The file should have already been uploaded via /upload-file
 INPUT
 
@@ -72,7 +72,7 @@ OUTPUT:
 ```
 {
 "message": "Succesfully separated audio",
-"spk_1": "media/separated/somefile-separated.wav",
-"spk_2": "media/separated/somefile-separated.wav",
+"spk_1": "media/separated/drnn/somefile-separated.wav",
+"spk_2": "media/separated/drnn/somefile-separated.wav",
 }
 ```
