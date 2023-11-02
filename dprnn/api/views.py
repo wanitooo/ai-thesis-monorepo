@@ -67,6 +67,7 @@ class DrnnSeparate(APIView):
     Gets the separated audio of two given audio using Deep Clustering with DRNN.
     """
     def post(self, request):
+        print("Request ", request)
         results = DRNNModel.get_separated_audio(request)
         
         if results:

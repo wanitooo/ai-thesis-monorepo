@@ -32,13 +32,15 @@ class DRNNModel:
         # TODO: Create separated audio logic using DPCL DRNN'
         separate_mix_scp = "dprnn/utils/mixed.scp" # creates file if not yet exists
         res = request.data
+        # print("request.POST", request.POST)
+        # print("request.data", request.data)
         if res:
             # return Response(request.POST.get('file'))
             separate_mix = open(separate_mix_scp, 'w')
             for root, dirs, files in os.walk(os.path.join('media', 'mixed')):
                 files.sort()
                 for file in files:
-                    if file == os.path.basename(request.POST.get('file')):
+                    if file == os.path.basename(request.data['file']):
                         separate_mix.write(file+" "+root+'/'+file)
                         separate_mix.write('\n')
                         separate_mix.close()
