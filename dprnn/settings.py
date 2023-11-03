@@ -133,9 +133,23 @@ REST_FRAMEWORK = {
 }
 
 STATIC_URL = '/static/'
+# STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:8080',
 ]
 # CORS_ORIGIN_ALLOW_ALL = True
+
+AWS_ACCESS_KEY_ID = 'AKIAQGTQMVL36JBY3QEK'
+AWS_SECRET_ACCESS_KEY = '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'
+AWS_STORAGE_BUCKET_NAME = 'dprnn-api-bucket'
+AWS_S3_SIGNATURE_NAME = 's3v4',
+AWS_S3_REGION_NAME = 'ap-southeast-1'
+AWS_S3_FILE_OVERWRITE = False
+AWS_DEFAULT_ACL = None
+AWS_S3_VERITY = True
+
+# DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage' # S3 storage
+# Local file system storage.
+DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
