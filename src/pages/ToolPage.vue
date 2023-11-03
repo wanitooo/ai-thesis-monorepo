@@ -39,7 +39,7 @@
           v-model="rnn_media"
           label="Upload File"
           :readonly="rnn_togglebtn"
-          accept=".mp3"
+          accept=".wav"
         >
           <template v-slot:prepend>
             <q-icon name="upload" @click.stop.prevent />
@@ -87,7 +87,7 @@
               class="custom-player"
               ref=""
               type="audio"
-              :sources="sources"
+              :source="speaker1_audio_path_rnn"
               style="border-radius: 3px"
             >
             </q-media-player>
@@ -97,7 +97,7 @@
               class="custom-player"
               ref=""
               type="audio"
-              :sources="sources"
+              :source="speaker2_audio_path_rnn"
               style="border-radius: 3px"
             >
             </q-media-player>
@@ -123,7 +123,7 @@
           v-model="dprnn_media"
           label="Upload File"
           :dense="dense"
-          accept=".mp3"
+          accept=".wav"
         >
           <template v-slot:prepend>
             <q-icon name="upload" @click.stop.prevent />
@@ -147,7 +147,7 @@
           v-model="dprnn_media"
           label="Upload File"
           :readonly="dprnn_togglebtn"
-          accept=".mp3"
+          accept=".wav"
         >
           <template v-slot:prepend>
             <q-icon name="upload" @click.stop.prevent />
@@ -179,7 +179,7 @@
             no-caps
             square
             label="Separate"
-            @click="handler"
+            @click="handleDPRNNSeparate"
             :disabled="!dprnn_togglebtn"
           />
         </div>
@@ -195,7 +195,7 @@
               class="custom-player"
               ref=""
               type="audio"
-              :sources="sources"
+              :source="speaker1_audio_path_dprnn"
               style="border-radius: 3px"
             >
             </q-media-player>
@@ -205,7 +205,7 @@
               class="custom-player"
               ref=""
               type="audio"
-              :sources="sources"
+              :source="speaker2_audio_path_dprnn"
               style="border-radius: 3px"
             >
             </q-media-player>
@@ -237,19 +237,25 @@ export default {
     const dprnn_media = ref(null);
     const dprnn_mediaplayer = ref(null);
     const dprnn_togglebtn = ref(false);
-    const mixed_audio_path = ref(null);
-    const speaker1_audio_path = ref(null);
-    const speaker2_audio_path = ref(null);
+
+    const mixed_audio_path_rnn = ref(null);
+    const mixed_audio_path_dprnn = ref(null);
+
+    const speaker1_audio_path_rnn = ref(null);
+    const speaker2_audio_path_rnn = ref(null);
+
+    const speaker1_audio_path_dprnn = ref(null);
+    const speaker2_audio_path_dprnn = ref(null);
     const itemUrl = ref(null);
 
     //This is just for testing
     const sources = [
       {
-        src: "backend/media/separated/drnn/spk1/1995-1837-0027_4970-29095-0022",
+        src: "https://file-examples.com/storage/fe1734aff46541d35a76822/2017/11/file_example_WAV_1MG.wav",
         type: "audio/wav",
       },
     ];
-
+    // console.log()
     watch(
       () => rnn_media.value,
       async (file) => {
@@ -267,7 +273,7 @@ export default {
               body: formData,
             }).then((res) => res.json());
             console.log("fetch triggered, response ", res);
-            mixed_audio_path.value = res.file;
+            mixed_audio_path_rnn.value = res.file;
             loadFileBlob(file, 0);
           } catch (error) {
             console.log("Something went wrong ", error);
@@ -281,10 +287,27 @@ export default {
 
     watch(
       () => dprnn_media.value,
-      (file) => {
+      async (file) => {
         if (file && file.length > 0) {
+          console.log("file ", " TYPE: ", typeof file, file);
+
           dprnn_togglebtn.value = true;
-          loadFileBlob(file, 1);
+          const formData = new FormData();
+          formData.append("file", file[0]);
+          try {
+            const res = await fetch("http://127.0.0.1:8000/upload-file/", {
+              method: "POST",
+              // headers: {
+              //   'Content-Type': "multipart/form-data"
+              // },
+              body: formData,
+            }).then((res) => res.json());
+            console.log("fetch triggered, response ", res);
+            mixed_audio_path_dprnn.value = res.file;
+            loadFileBlob(file, 1);
+          } catch (error) {
+            console.log("Something went wrong ", error);
+          }
         } else {
           dprnn_togglebtn.value = false;
           loadFileBlob(null, 1);
@@ -301,38 +324,56 @@ export default {
     }
     async function handleDRNNSeparate() {
       console.log(
-        "mixed_audio_path ",
-        JSON.stringify({ file: mixed_audio_path.value })
+        "mixed_audio_path RNN ",
+        JSON.stringify({ file: mixed_audio_path_rnn.value })
       );
+      console.log("fetching drnn-separate...");
       const res = await fetch("http://127.0.0.1:8000/drnn-separate/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ file: mixed_audio_path.value }),
+        body: JSON.stringify({ file: mixed_audio_path_rnn.value }),
       }).then((res) => res.json());
-      console.log("Separate triggered, res ", res);
-      speaker1_audio_path.value = res.spk_1;
-      speaker2_audio_path.value = res.spk_2;
+      console.log("Separation finished, res ", res);
+      speaker1_audio_path_rnn.value = res.spk_1;
+      speaker2_audio_path_rnn.value = res.spk_2;
     }
-    async function handler() {
-      console.log("Triggered handler");
-      // var output = fs.readFileSync("../../backend/requirements.txt");
+    async function handleDPRNNSeparate() {
+      console.log(
+        "mixed_audio_path DPRNN",
+        JSON.stringify({ file: mixed_audio_path_dprnn.value })
+      );
+      console.log("fetching dprnn-separate...");
 
-      console.log(output);
+      const res = await fetch("http://127.0.0.1:8000/dprnn-separate/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ file: mixed_audio_path_dprnn.value }),
+      }).then((res) => res.json());
+      console.log("Separate finished, res ", res);
+      speaker1_audio_path_dprnn.value = res.spk_1;
+      speaker2_audio_path_dprnn.value = res.spk_2;
     }
+
     return {
       //for RNN
       rnn_media,
       rnn_mediaplayer,
       rnn_togglebtn,
       handleDRNNSeparate,
+      speaker1_audio_path_rnn,
+      speaker2_audio_path_rnn,
 
       //for DPRNN
       dprnn_media,
       dprnn_mediaplayer,
       dprnn_togglebtn,
-      handler,
+      handleDPRNNSeparate,
+      speaker1_audio_path_dprnn,
+      speaker2_audio_path_dprnn,
 
       itemUrl,
       sources,
