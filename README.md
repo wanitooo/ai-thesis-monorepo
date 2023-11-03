@@ -2,9 +2,10 @@
 
 - ~~Separate a single mix audio~~
 - ~~Integrate this separation into an HTTP route~~
-- Create route for DPCL DPRNN separation
-- Create a route for WER score
-- Create a route for SI SNR score
+- ~~Create route for DPCL DPRNN separation~~
+- For DPRNN and RNN
+  - Create a route for WER score
+  - Create a route for SI SNR score
 
 ## Notes:
 
@@ -38,7 +39,9 @@ python manage.py runserver
 
 ## API DOC
 
-POST /upload-file
+## POST /upload-file
+
+#### A file blob of the audio needs to be sent in the "file" field of the request (via FormData)
 
 INPUT
 
@@ -57,8 +60,10 @@ OUTPUT:
 }
 ```
 
-POST /drnn-separate and /dprnn-separate :
-NOTE: The file should have already been uploaded via /upload-file
+## POST /drnn-separate and /dprnn-separate:
+
+#### NOTE: The file should have already been uploaded via /upload-file
+
 INPUT
 
 ```
@@ -72,7 +77,7 @@ OUTPUT:
 ```
 {
 "message": "Succesfully separated audio",
-"spk_1": "media/separated/drnn/somefile-separated.wav",
-"spk_2": "media/separated/drnn/somefile-separated.wav",
+"spk_1": "https://s3.endpoint.com/media/separated/drnn/spk1/somefile-separated.wav",
+"spk_2": "https://s3.endpoint.com/media/separated/drnn/spk2/somefile-separated.wav",
 }
 ```
