@@ -28,17 +28,28 @@ class DPCL(nn.Module):
                   for train: B x TF x D
                   for test: TF x D
         '''
+        print("x.data.size() before not is_train ", x.data.size())
         if not is_train:
             x = torch.unsqueeze(x, 0)
+            print("not is_train triggered ", x.data.size())
         # B x T x F -> B x T x hidden
+        print("x.data.size() before self.blstm ", x.data.size())
+        # print("x.data.size()", x.data.size()) # errors\
         x, _ = self.blstm(x)
+        print("x.data.size() after self.blstm ", x.data.size())
+
         if is_train:
             x, _ = pad_packed_sequence(x, batch_first=True)
+            print("is_train triggered ", x.data.size())
         x = self.dropout(x)
 
         # B x T x hidden -> B x T x FD
+        print("x.data.size() before self.linear ", x.data.size())
         x = self.linear(x)
+        print("x.data.size() after self.linear ", x.data.size())
+
         x = self.activation(x)
+        print("x.data.size() after self.activation ", x.data.size())
 
         B = x.shape[0]
         if is_train:

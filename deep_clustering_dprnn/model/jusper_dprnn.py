@@ -1,14 +1,71 @@
+import warnings
+from utils.util import check_parameters
+import torch
+from torch import nn
+import torch.nn.functional as F
 import sys
 sys.path.append('../')
 
-import torch.nn.functional as F
-from torch import nn
-import torch
-from utils.util import check_parameters
-
-import warnings
 
 warnings.filterwarnings('ignore')
+
+# These are covn tasnet components ?
+# :
+#
+
+#     class Encoder(nn.Module):
+#         '''
+#         Conv-Tasnet Encoder part
+#         kernel_size: the length of filters
+#         out_channels: the number of filters
+#         '''
+
+#         def __init__(self, kernel_size=2, out_channels=64):
+#             super(Encoder, self).__init__()
+#             self.conv1d = nn.Conv1d(in_channels=1, out_channels=out_channels,
+#                                     kernel_size=kernel_size, stride=kernel_size//2, groups=1, bias=False)
+
+#         def forward(self, x):
+#             """
+#             Input:
+#                 x: [B, T], B is batch size, T is times
+#             Returns:
+#                 x: [B, C, T_out]
+#                 T_out is the number of time steps
+#             """
+#             # B x T -> B x 1 x T
+#             x = torch.unsqueeze(x, dim=1)
+#             # B x 1 x T -> B x C x T_out
+#             x = self.conv1d(x)
+#             x = F.relu(x)
+#             return x
+
+
+#     class Decoder(nn.ConvTranspose1d):
+#         '''
+#             Decoder of the TasNet
+#             This module can be seen as the gradient of Conv1d with respect to its input.
+#             It is also known as a fractionally-strided convolution
+#             or a deconvolution (although it is not an actual deconvolution operation).
+#         '''
+
+#         def __init__(self, *args, **kwargs):
+#             super(Decoder, self).__init__(*args, **kwargs)
+
+#         def forward(self, x):
+#             """
+#             x: [B, N, L]
+#             """
+#             if x.dim() not in [2, 3]:
+#                 raise RuntimeError("{} accept 3/4D tensor as input".format(
+#                     self.__name__))
+#             x = super().forward(x if x.dim() == 3 else torch.unsqueeze(x, 1))
+
+#             if torch.squeeze(x).dim() == 1:
+#                 x = torch.squeeze(x, dim=1)
+#             else:
+#                 x = torch.squeeze(x)
+#             return x
 
 class GlobalLayerNorm(nn.Module):
     '''
@@ -16,8 +73,8 @@ class GlobalLayerNorm(nn.Module):
        dim: (int or list or torch.Size) –
           input shape from an expected input of size
        eps: a value added to the denominator for numerical stability.
-       elementwise_affine: a boolean value that when set to True, 
-          this module has learnable per-element affine parameters 
+       elementwise_affine: a boolean value that when set to True,
+          this module has learnable per-element affine parameters
           initialized to ones (for weights) and zeros (for biases).
     '''
 
@@ -62,9 +119,9 @@ class GlobalLayerNorm(nn.Module):
 
 class CumulativeLayerNorm(nn.LayerNorm):
     '''
-       Calculate Cumulative Layer Normalization
-       dim: you want to norm dim
-       elementwise_affine: learnable per-element affine parameters 
+        Calculate Cumulative Layer Normalization
+        dim: you want to norm dim
+        elementwise_affine: learnable per-element affine parameters
     '''
 
     def __init__(self, dim, elementwise_affine=True):
@@ -75,11 +132,11 @@ class CumulativeLayerNorm(nn.LayerNorm):
         # x: N x C x K x S or N x C x L
         # N x K x S x C
         if x.dim() == 4:
-           x = x.permute(0, 2, 3, 1).contiguous()
-           # N x K x S x C == only channel norm
-           x = super().forward(x)
-           # N x C x K x S
-           x = x.permute(0, 3, 1, 2).contiguous()
+            x = x.permute(0, 2, 3, 1).contiguous()
+            # N x K x S x C == only channel norm
+            x = super().forward(x)
+            # N x C x K x S
+            x = x.permute(0, 3, 1, 2).contiguous()
         if x.dim() == 3:
             x = torch.transpose(x, 1, 2)
             # N x L x C == only channel norm
@@ -99,62 +156,8 @@ def select_norm(norm, dim, shape):
     else:
         return nn.BatchNorm1d(dim)
 
-class Encoder(nn.Module):
-    '''
-       Conv-Tasnet Encoder part
-       kernel_size: the length of filters
-       out_channels: the number of filters
-    '''
 
-    def __init__(self, kernel_size=2, out_channels=64):
-        super(Encoder, self).__init__()
-        self.conv1d = nn.Conv1d(in_channels=1, out_channels=out_channels,
-                                kernel_size=kernel_size, stride=kernel_size//2, groups=1, bias=False)
-
-    def forward(self, x):
-        """
-          Input:
-              x: [B, T], B is batch size, T is times
-          Returns:
-              x: [B, C, T_out]
-              T_out is the number of time steps
-        """
-        # B x T -> B x 1 x T
-        x = torch.unsqueeze(x, dim=1)
-        # B x 1 x T -> B x C x T_out
-        x = self.conv1d(x)
-        x = F.relu(x)
-        return x
-
-
-class Decoder(nn.ConvTranspose1d):
-    '''
-        Decoder of the TasNet
-        This module can be seen as the gradient of Conv1d with respect to its input. 
-        It is also known as a fractionally-strided convolution 
-        or a deconvolution (although it is not an actual deconvolution operation).
-    '''
-
-    def __init__(self, *args, **kwargs):
-        super(Decoder, self).__init__(*args, **kwargs)
-
-    def forward(self, x):
-        """
-        x: [B, N, L]
-        """
-        if x.dim() not in [2, 3]:
-            raise RuntimeError("{} accept 3/4D tensor as input".format(
-                self.__name__))
-        x = super().forward(x if x.dim() == 3 else torch.unsqueeze(x, 1))
-
-        if torch.squeeze(x).dim() == 1:
-            x = torch.squeeze(x, dim=1)
-        else:
-            x = torch.squeeze(x)
-        return x
-
-
-class Dual_RNN_Block(nn.Module):
+class Dual_RNN_Block(nn.Module):  # Corresponds to only B)
     '''
        Implementation of the intra-RNN and the inter-RNN
        input:
@@ -172,63 +175,71 @@ class Dual_RNN_Block(nn.Module):
                  hidden_channels, rnn_type='LSTM', norm='ln',
                  dropout=0, bidirectional=False, num_spks=2):
         super(Dual_RNN_Block, self).__init__()
+        # RNN model
+        # getattr() gets nn.<RNN_TYPE> and then intializes it with the args, so its like nn.BLSTM(*args, **kwargs)
         self.intra_rnn = getattr(nn, rnn_type)(
             out_channels, hidden_channels, 1, batch_first=True, dropout=dropout, bidirectional=bidirectional)
         self.inter_rnn = getattr(nn, rnn_type)(
             out_channels, hidden_channels, 1, batch_first=True, dropout=dropout, bidirectional=bidirectional)
         # Norm
-        self.intra_norm = select_norm(norm, out_channels, 4)
-        self.inter_norm = select_norm(norm, out_channels, 4)
+        self.intra_norm = select_norm(norm, out_channels, 4)  # in the
+        self.inter_norm = select_norm(norm, out_channels, 4)  # in the
         # Linear
         self.intra_linear = nn.Linear(
             hidden_channels*2 if bidirectional else hidden_channels, out_channels)
         self.inter_linear = nn.Linear(
             hidden_channels*2 if bidirectional else hidden_channels, out_channels)
-        
 
     def forward(self, x):
         '''
+            B == BATCH, N==feature dims, K==Length of the chunks (from L length of segment), S==Number of chunks
            x: [B, N, K, S]
            out: [Spks, B, N, K, S]
         '''
         B, N, K, S = x.shape
+        # Based on my reading permute() rearanges the order of the dims, view() reshapes
         # intra RNN
-        # [BS, K, N]
+        # [BS, K, N] # Preparing the shape to feed into the intra chunk(?)
         intra_rnn = x.permute(0, 3, 2, 1).contiguous().view(B*S, K, N)
         # [BS, K, H]
+        # Gets the type of rnn then feeds the data
         intra_rnn, _ = self.intra_rnn(intra_rnn)
         # [BS, K, N]
-        intra_rnn = self.intra_linear(intra_rnn.contiguous().view(B*S*K, -1)).view(B*S, K, -1)
+        intra_rnn = self.intra_linear(
+            intra_rnn.contiguous().view(B*S*K, -1)).view(B*S, K, -1)
         # [B, S, K, N]
         intra_rnn = intra_rnn.view(B, S, K, N)
         # [B, N, K, S]
         intra_rnn = intra_rnn.permute(0, 3, 2, 1).contiguous()
         intra_rnn = self.intra_norm(intra_rnn)
-        
+
         # [B, N, K, S]
-        intra_rnn = intra_rnn + x
+        intra_rnn = intra_rnn + x  # adds the processed input back to the original input
 
         # inter RNN
-        # [BK, S, N]
+        # [BK, S, N] # Prepares shape, note 2 and 3 are exchanged this time?
         inter_rnn = intra_rnn.permute(0, 2, 3, 1).contiguous().view(B*K, S, N)
         # [BK, S, H]
+        # Gets the type of rnn then feeds the data
         inter_rnn, _ = self.inter_rnn(inter_rnn)
         # [BK, S, N]
-        inter_rnn = self.inter_linear(inter_rnn.contiguous().view(B*S*K, -1)).view(B*K, S, -1)
+        inter_rnn = self.inter_linear(
+            inter_rnn.contiguous().view(B*S*K, -1)).view(B*K, S, -1)
         # [B, K, S, N]
         inter_rnn = inter_rnn.view(B, K, S, N)
         # [B, N, K, S]
         inter_rnn = inter_rnn.permute(0, 3, 1, 2).contiguous()
         inter_rnn = self.inter_norm(inter_rnn)
         # [B, N, K, S]
+        # intra_rnn (tensor) is the "original" input that was fed to the inter rnn (layers)
         out = inter_rnn + intra_rnn
 
         return out
 
 
-class Dual_Path_RNN(nn.Module):
+class Dual_Path_RNN(nn.Module):  # The DPRNN block all together
     '''
-       Implementation of the Dual-Path-RNN model
+       Implementation of the Dual-Path-RNN model 
        input:
             in_channels: The number of expected features in the input x
             out_channels: The number of features in the hidden state h
@@ -256,15 +267,15 @@ class Dual_Path_RNN(nn.Module):
         self.dual_rnn = nn.ModuleList([])
         for i in range(num_layers):
             self.dual_rnn.append(Dual_RNN_Block(out_channels, hidden_channels,
-                                     rnn_type=rnn_type, norm=norm, dropout=dropout,
-                                     bidirectional=bidirectional))
+                                                rnn_type=rnn_type, norm=norm, dropout=dropout,
+                                                bidirectional=bidirectional))
 
         self.conv2d = nn.Conv2d(
             out_channels, out_channels*num_spks, kernel_size=1)
         self.end_conv1x1 = nn.Conv1d(out_channels, in_channels, 1, bias=False)
         self.prelu = nn.PReLU()
         self.activation = nn.ReLU()
-         # gated output layer
+        # gated output layer
         self.output = nn.Sequential(nn.Conv1d(out_channels, out_channels, 1),
                                     nn.Tanh()
                                     )
@@ -290,7 +301,7 @@ class Dual_Path_RNN(nn.Module):
         x = self.conv2d(x)
         # [B*spks, N, K, S]
         B, _, K, S = x.shape
-        x = x.view(B*self.num_spks,-1, K, S)
+        x = x.view(B*self.num_spks, -1, K, S)
         # [B*spks, N, L]
         x = self._over_add(x, gap)
         x = self.output(x)*self.output_gate(x)
@@ -324,16 +335,17 @@ class Dual_Path_RNN(nn.Module):
 
         return input, gap
 
-    def _Segmentation(self, input, K):
+    def _Segmentation(self, input, K):  # Corresponds to A)
         '''
            the segmentation stage splits
-           K: chunks of length
+           K: length of chunks
            P: hop size
-           input: [B, N, L]
+           input: [B, N, L] # N = feature dims, L=Length of segment
            output: [B, N, K, S]
         '''
         B, N, L = input.shape
         P = K // 2
+        # padding may not be needed, as the input would have gone through pre processing with STFT
         input, gap = self._padding(input, K)
         # [B, N, K, S]
         input1 = input[:, :, :-P].contiguous().view(B, N, -1, K)
@@ -343,7 +355,7 @@ class Dual_Path_RNN(nn.Module):
 
         return input.contiguous(), gap
 
-    def _over_add(self, input, gap):
+    def _over_add(self, input, gap):  # Corresponds to C)
         '''
            Merge sequence
            input: [B, N, K, S]
@@ -364,9 +376,12 @@ class Dual_Path_RNN(nn.Module):
 
         return input
 
-class Dual_RNN_model(nn.Module):
+
+class Dual_RNN_model(nn.Module):  # With conv tasnet
+    # WILL NOT BE CALLING
     '''
-       model of Dual Path RNN
+       model of Dual Path RNN # with conv-tasnet?, the encoder / decoder model was a tasnet specific thing iirc
+
        input:
             in_channels: The number of expected features in the input x
             out_channels: The number of features in the hidden state h
@@ -382,17 +397,20 @@ class Dual_RNN_model(nn.Module):
             K: the length of chunk
             num_spks: the number of speakers
     '''
+
     def __init__(self, in_channels, out_channels, hidden_channels,
                  kernel_size=2, rnn_type='LSTM', norm='ln', dropout=0,
                  bidirectional=False, num_layers=4, K=200, num_spks=2):
-        super(Dual_RNN_model,self).__init__()
-        self.encoder = Encoder(kernel_size=kernel_size,out_channels=in_channels)
+        super(Dual_RNN_model, self).__init__()
+        self.encoder = Encoder(kernel_size=kernel_size,
+                               out_channels=in_channels)
         self.separation = Dual_Path_RNN(in_channels, out_channels, hidden_channels,
-                 rnn_type=rnn_type, norm=norm, dropout=dropout,
-                 bidirectional=bidirectional, num_layers=num_layers, K=K, num_spks=num_spks)
-        self.decoder = Decoder(in_channels=in_channels, out_channels=1, kernel_size=kernel_size, stride=kernel_size//2, bias=False)
+                                        rnn_type=rnn_type, norm=norm, dropout=dropout,
+                                        bidirectional=bidirectional, num_layers=num_layers, K=K, num_spks=num_spks)
+        self.decoder = Decoder(in_channels=in_channels, out_channels=1,
+                               kernel_size=kernel_size, stride=kernel_size//2, bias=False)
         self.num_spks = num_spks
-    
+
     def forward(self, x):
         '''
            x: [B, L]
@@ -406,9 +424,11 @@ class Dual_RNN_model(nn.Module):
         audio = [self.decoder(out[i]) for i in range(self.num_spks)]
         return audio
 
+
 if __name__ == "__main__":
-    rnn = Dual_RNN_model(256, 64, 128,bidirectional=True, norm='ln', num_layers=6)
-    #encoder = Encoder(16, 512)
+    rnn = Dual_RNN_model(256, 64, 128, bidirectional=True,
+                         norm='ln', num_layers=6)
+    # encoder = Encoder(16, 512)
     x = torch.ones(1, 100)
     out = rnn(x)
     print("{:.3f}".format(check_parameters(rnn)*1000000))

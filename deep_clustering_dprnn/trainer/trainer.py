@@ -65,10 +65,10 @@ class Trainer(object):
         for mix_wave, target_waves, non_slient in self.train_dataloader:
             if (num_index > 1):
                 break
-            self.logger.info(f'mix_wave.data.size() at train(): {mix_wave.data.size()}'
-                             )  # fed to the model
-            self.logger.info(f'target_waves.data.size() at train(): {target_waves.data.size()}',
-                             )  # used in calculating loss
+            #self.logger.info(f'mix_wave.data.size() at train(): {mix_wave.data.size()}'
+            #                 )  # fed to the model
+            #self.logger.info(f'target_waves.data.size() at train(): {target_waves.data.size()}',
+            #                 )  # used in calculating loss
             # print("mix_wave.data.size() at train(),", mix_wave.data.size()) # Does not print
             # print("target_waves.data.size() at train(), self.dpcl(mix_wave)",
             #       target_waves.data.size())
@@ -110,6 +110,10 @@ class Trainer(object):
         start_time = time.time()
         with torch.no_grad():
             for mix_wave, target_waves, non_slient in self.val_dataloader:
+                #self.logger.info(f'mix_wave.data.size() at validation(): {mix_wave.data.size()}'
+                #                 )  # fed to the model
+                #self.logger.info(f'target_waves.data.size() at validation(): {target_waves.data.size()}',
+                #                 )  # used in calculating loss
                 mix_wave = mix_wave.to(self.device)
                 target_waves = target_waves.to(self.device)
                 non_slient = non_slient.to(self.device)
@@ -152,12 +156,14 @@ class Trainer(object):
                 no_improve += 1
                 self.logger.info(
                     'No improvement, Best Loss: {:.4f}'.format(best_loss))
+                print()
             else:
                 best_loss = v_loss
                 no_improve = 0
                 self.save_checkpoint(self.cur_epoch, best=True)
                 self.logger.info('Epoch: {:d}, Now Best Loss Change: {:.4f}'.format(
                     self.cur_epoch, best_loss))
+                print()
 
             if no_improve == self.early_stop:
                 self.logger.info(
