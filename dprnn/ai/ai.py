@@ -69,7 +69,8 @@ class DRNNModel:
         # https://dprnn-api-bucket.s3.ap-southeast-1.amazonaws.com/media/separated/drnn/spk1/121-121726-0014_7021-79740-0000.wav
         for audio in audios:
             with open(audio, "rb") as f:
-                client_s3.upload_fileobj(f, bucket_name, audio, ExtraArgs={'ACL': 'public-read'})
+                client_s3.upload_fileobj(f, bucket_name, audio, ExtraArgs={
+                                         'ACL': 'public-read'})
                 file_url = 'https://%s.s3.%s.amazonaws.com/%s' % (bucket_name,
                                                                   region, audio)
                 print("Uploaded file to ", file_url)
@@ -143,7 +144,7 @@ class DPRNNModel:
             save_file='media/separated/', scp_file=separate_mix_scp)
         audios = separation.run()
 
-        print("Uploading to s3...")
+        print("\nUploading to s3...\n")
         client_s3 = boto3.client(
             's3',
             aws_access_key_id=access_key,
@@ -153,12 +154,13 @@ class DPRNNModel:
         # https://dprnn-api-bucket.s3.ap-southeast-1.amazonaws.com/media/separated/drnn/spk1/121-121726-0014_7021-79740-0000.wav
         for audio in audios:
             with open(audio, "rb") as f:
-                client_s3.upload_fileobj(f, bucket_name, audio, ExtraArgs={'ACL': 'public-read'})
+                client_s3.upload_fileobj(f, bucket_name, audio, ExtraArgs={
+                                         'ACL': 'public-read'})
                 file_url = 'https://%s.s3.%s.amazonaws.com/%s' % (bucket_name,
                                                                   region, audio)
                 print("Uploaded file to ", file_url)
                 urls.append(file_url)
-
+        print()
         return {"spk_1": urls[0], "spk_2": urls[1]}
 
     @staticmethod

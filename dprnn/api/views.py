@@ -27,15 +27,19 @@ class FileUploadAPIView(APIView):
 
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
+        print("Uploading file...")
         if serializer.is_valid():
             # print(serializer.validated_data)
             # you can access the file like this from serializer
             # uploaded_file = serializer.validated_data["file"]
             serializer.save()
+            print("Uploaded file successfully!")
+            
             return Response(
                 serializer.data,
                 status=status.HTTP_201_CREATED
             )
+        print("File failed!")
 
         return Response(
             serializer.errors,

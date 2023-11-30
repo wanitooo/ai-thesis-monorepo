@@ -6,3 +6,4 @@ pretrained/
 dataset/*/
 media/**/*
 result/*
+*noisereduce/

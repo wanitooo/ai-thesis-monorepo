@@ -1,3 +1,4 @@
+import noisereduce as nr
 import sys
 import os
 sys.path.append('./')
@@ -15,7 +16,6 @@ import pickle
 from tqdm import tqdm
 # import soundfile as sf
 from typing import List
-
 
 class DRNNSeparation(object):
     '''
@@ -209,8 +209,10 @@ class DPRNNSeparation(object):
                 output_file = os.path.join(
                     self.save_file, "dprnn",'spk'+str(i+1))
                 os.makedirs(output_file, exist_ok=True)
-
-                librosa.output.write_wav(output_file+'/'+name, i_stft, 8000)
+                reduced = nr.reduce_noise(
+                    y=i_stft, sr=8000, prop_decrease=0.65)
+                librosa.output.write_wav(
+                    output_file+'/'+name, reduced, 8000)
                 output_file_paths.append(output_file+'/'+name)
                 # sf.write(output_file+'/'+name, i_stft, 8000)
             index += 1
