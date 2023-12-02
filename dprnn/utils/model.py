@@ -225,10 +225,13 @@ class Dual_RNN_Block(nn.Module):  # Corresponds to only B) # This block is stand
                  hiddden_cells, rnn_type='LSTM', norm='gln',
                  dropout=0, bidirectional=False, num_spks=2):
         super(Dual_RNN_Block, self).__init__()
+        # self.intra_rnn = nn.LSTM(args, **kwargs)
         self.intra_rnn = getattr(nn, rnn_type)(
-            input_size=hiddden_cells*2 if bidirectional else hiddden_cells, hidden_size=hiddden_cells, num_layers=1, batch_first=True, dropout=dropout, bidirectional=bidirectional)
+            input_size=hiddden_cells*2 if bidirectional else hiddden_cells, hidden_size=hiddden_cells,
+            num_layers=1, batch_first=True, dropout=dropout, bidirectional=bidirectional)
         self.inter_rnn = getattr(nn, rnn_type)(
-            input_size=hiddden_cells*2 if bidirectional else hiddden_cells, hidden_size=hiddden_cells, num_layers=1, batch_first=True, dropout=dropout, bidirectional=bidirectional)
+            input_size=hiddden_cells*2 if bidirectional else hiddden_cells, hidden_size=hiddden_cells,
+            num_layers=1, batch_first=True, dropout=dropout, bidirectional=bidirectional)
         # Norm
         self.intra_norm = select_norm(
             norm, hiddden_cells*2 if bidirectional else hiddden_cells, 4)  # in the
@@ -293,7 +296,7 @@ class Dual_RNN_Block(nn.Module):  # Corresponds to only B) # This block is stand
         return out
 
 
-class Dual_Path_RNN(nn.Module):  # The DPRNN block all together # Has conv tasnet layers
+class Dual_Path_RNN(nn.Module):  # The DPRNN block all together
     '''
        Implementation of the Dual-Path-RNN model 
        input:

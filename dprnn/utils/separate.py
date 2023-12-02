@@ -133,7 +133,6 @@ class DPRNNSeparation(object):
     def __init__(self, scp_file, save_file):
         super(DPRNNSeparation, self).__init__()
         gpu = False
-        # Simulates `dpcl = model.DPCL(**opt['DPCL'])`
         initial = model.DPCL_DPRNN(in_channels=129, hidden_channels=600, emb_D=10, dropout=0, rnn_type='LSTM', norm='gln', K=5,num_spks=2,
                             bidirectional=True, activation='Tanh', num_layers=1)
         if gpu:
@@ -173,7 +172,7 @@ class DPRNNSeparation(object):
         mix_cluster = self.kmeans.fit_predict(mix_emb)
         targets_mask = []
         for i in range(self.num_spks):
-            mask = ~non_silent
+            mask = ~non_silent # negative of non_silent parts
             mask[non_silent] = (mix_cluster == i)
             targets_mask.append(mask)
 
@@ -209,10 +208,10 @@ class DPRNNSeparation(object):
                 output_file = os.path.join(
                     self.save_file, "dprnn",'spk'+str(i+1))
                 os.makedirs(output_file, exist_ok=True)
-                reduced = nr.reduce_noise(
+                file = nr.reduce_noise(
                     y=i_stft, sr=8000, prop_decrease=0.65)
                 librosa.output.write_wav(
-                    output_file+'/'+name, reduced, 8000)
+                    output_file+'/'+name, file, 8000)
                 output_file_paths.append(output_file+'/'+name)
                 # sf.write(output_file+'/'+name, i_stft, 8000)
             index += 1

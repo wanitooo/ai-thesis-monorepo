@@ -59,7 +59,7 @@ class DRNNModel:
             save_file='media/separated/', scp_file=separate_mix_scp)
         audios = separation.run()
 
-        print("Uploading to s3...")
+        print("\nUploading to s3...")
         client_s3 = boto3.client(
             's3',
             aws_access_key_id=access_key,
