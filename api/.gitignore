@@ -1,0 +1,9 @@
+*.sqlite3
+venv/
+vevn/
+*.pyc
+pretrained/
+dataset/*/
+media/**/*
+result/*
+*noisereduce/
